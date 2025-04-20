@@ -1,0 +1,74 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Coding Standards
+
+This app follows specific coding standards to maintain quality and consistency throughout the codebase:
+
+## General Formatting
+- Use the Flutter/Dart standard formatter with 2-space indentation
+- Limit line length to 80 characters where reasonable
+- Group related functions and properties together
+- Order class members: constructors, fields, lifecycle methods, other methods
+
+## Naming Conventions
+- Use `camelCase` for variables and methods
+- Use `PascalCase` for classes, enums, and extensions
+- Use `snake_case` for file names
+- Prefix private variables and methods with underscore (e.g., `_privateField`)
+
+## Flutter Best Practices
+- Use `const` constructors whenever possible for better performance
+- Extract reusable widgets into separate classes
+- Implement proper dispose methods for controllers and animations
+- Check widget mounting status (`mounted`) before setState or context use
+
+## State Management
+- Access state via Riverpod providers
+- Avoid setState for state that should be shared across widgets
+- Use AsyncValue for handling async operations with loading/error states
+- Keep providers focused on single responsibility
+
+## Error Handling
+- Use try/catch blocks for operations that could fail
+- Provide meaningful error messages to users
+- Log errors for debugging purposes
+- Handle network and service errors gracefully
+
+## Code Example from [home_screen.dart](mdc:lib/screens/home_screen.dart):
+```dart
+Future<void> _processImage(File imageFile) async {
+  setState(() {
+    _isProcessing = true;
+  });
+
+  try {
+    await ref
+        .read(locationDetectionNotifierProvider.notifier)
+        .detectLocationFromFile(imageFile, saveImage: _saveImage);
+
+    if (mounted) {
+      context.goNamed(AppRoute.result.name);
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+  }
+}
+```
+
+Follow these standards when adding or modifying code to ensure consistency and maintainability throughout the project.

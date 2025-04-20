@@ -1,0 +1,43 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# State Management
+
+This app uses Riverpod for state management, following a consistent pattern throughout the codebase:
+
+## Riverpod Implementation
+- Uses `flutter_riverpod` package
+- Screens are wrapped with `ConsumerWidget` or `ConsumerStatefulWidget`
+- State is accessed via `ref.watch()` and `ref.read()`
+- Providers are defined in dedicated files under the `providers/` directory
+- Providers are always created using riverpod generator
+
+## Provider Types
+- **NotifierProvider**: For complex state logic with multiple state changes (e.g., [user_provider.dart](mdc:lib/providers/user_provider.dart))
+- **FutureProvider**: For async data fetching (used within widgets for price fetching)
+- **StateProvider**: For simple state that needs to be accessed across the app
+
+## Accessing State
+- `ref.watch()` - Used in build methods to reactively rebuild UI when state changes
+- `ref.read()` - Used in event handlers and methods that don't need to watch for changes
+- `ref.listen()` - Used to react to state changes outside the build method
+
+## Data Flow
+1. UI interacts with providers through user actions
+2. Providers update state using state notifiers
+3. UI rebuilds automatically when watched providers change
+
+## Provider Dependencies
+Providers can depend on other providers, creating a hierarchy of state management:
+```dart
+final someFeatureProvider = Provider((ref) {
+  // Access another provider
+  final dependency = ref.watch(anotherProvider);
+  // Use the dependency
+  return SomeFeature(dependency);
+});
+```
+
+Always prefer using the state management system over direct state manipulation to ensure consistency and testability.

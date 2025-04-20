@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Architecture Patterns
+
+This app follows a provider-based architecture with clear separation of concerns:
+
+## Architectural Layers
+1. **UI Layer** - Screens and widgets in `screens/` and `widgets/` directories
+2. **State Management Layer** - Providers in the `providers/` directory
+3. **Data Layer** - Models in the `models/` directory
+4. **Service Layer** - Business logic for features like location detection
+
+## Dependency Flow
+- UI depends on providers
+- Providers depend on services and other providers
+- Services depend on models and external packages
+- Models are independent, pure data structures
+
+## Provider Architecture
+- Screens consume providers for state and actions
+- Providers encapsulate business logic and state
+- Complex operations are delegated to service classes
+- State changes flow unidirectionally from providers to UI
+
+## Navigation Architecture
+- Centralized routing using Go Router
+- Routes defined in [app_router.dart](mdc:lib/router/app_router.dart)
+- Navigation is triggered through context (e.g., `context.goNamed(AppRoute.result.name)`)
+
+## Error Handling
+- Errors are caught at the provider level when possible
+- UI displays error messages through SnackBars
+- Error states are propagated through Riverpod's AsyncValue
+
+## UI Update Flow
+1. User interacts with UI element
+2. UI calls provider method
+3. Provider updates state
+4. UI rebuilds based on new state from provider
+
+When implementing new features, maintain this separation of concerns to ensure the codebase remains maintainable and testable:
+- Keep UI components focused on presentation
+- Put business logic in providers or dedicated service classes
+- Define clear data models for transferring information between layers
+- Handle errors at appropriate levels

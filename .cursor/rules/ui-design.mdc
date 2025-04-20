@@ -1,0 +1,45 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# UI Design System
+
+This app follows a consistent UI design system to ensure visual coherence throughout:
+
+## Theme Configuration
+- Centralized theme definition in [app_theme.dart](mdc:lib/theme/app_theme.dart)
+- Material 3 design enabled with `useMaterial3: true`
+- Custom color scheme defined in `AppColors` class
+- Standardized spacing system in `AppSpacing` class
+- Consistent border radius values in `AppRadius` class
+
+## Color Usage
+- Primary color: Electric blue accent (`Color(0xFF007AFF)`)
+- Alternative accent: Coral accent (`Color(0xFFFF7A5C)`)
+- Background: White (`Color(0xFFFFFFFF)`)
+- Text: Dark grey (`Color(0xFF222222)`)
+- Supporting colors for various UI states (error, success)
+
+## Spacing and Layout
+- Spacing constants: xs (4.0), s (8.0), m (16.0), l (24.0), xl (32.0), xxl (48.0)
+- Consistent padding and margins using the spacing system
+- Responsive layouts using MediaQuery and relative sizing
+
+## Text Styles
+- Typography defined in the theme's `textTheme`
+- Headings, body text, and labels have consistent sizing and weights
+- Text colors use the app's color system
+
+## Components
+- Card design with consistent elevation and border radius
+- Button styles (elevated, outlined, text) with standardized appearance
+- Input fields with standardized padding and styling
+- Custom painters for decorative elements (e.g., [PatternPainter](mdc:lib/screens/home_screen.dart))
+
+## Special Effects
+- Custom animations for UI elements
+- Subtle background patterns
+- Shadow effects with consistent blurRadius and color
+
+When implementing new UI components, follow these design principles and utilize the existing theme system rather than hardcoding values. This ensures a consistent user experience throughout the app.

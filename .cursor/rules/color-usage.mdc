@@ -1,0 +1,53 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Color Usage and Accessibility
+
+Color plays a crucial role in the app's UI and should be used consistently and accessibly:
+
+## Color Definitions
+All colors are centrally defined in [app_theme.dart](mdc:lib/theme/app_theme.dart) within the `AppColors` class:
+
+```dart
+class AppColors {
+  // Primary colors
+  static const Color white = Color(0xFFFFFFFF);
+  static const Color darkGrey = Color(0xFF222222);
+  static const Color accent = Color(0xFF007AFF); // Electric blue accent
+  static const Color accentAlt = Color(0xFFFF7A5C); // Coral alternative accent
+
+  // Supporting colors
+  static const Color lightGrey = Color(0xFFF5F5F5);
+  static const Color mediumGrey = Color(0xFFE0E0E0);
+  static const Color textGrey = Color(0xFF757575);
+  static const Color errorRed = Color(0xFFE53935);
+  static const Color successGreen = Color(0xFF43A047);
+}
+```
+
+## Color Usage Guidelines
+- Use `AppColors.accent` as the primary action color
+- Use `AppColors.accentAlt` as the secondary accent for visual interest
+- Use `AppColors.darkGrey` for primary text content
+- Use `AppColors.textGrey` for secondary text content
+- Use `AppColors.errorRed` for error states and messages
+- Use `AppColors.successGreen` for success states and messages
+
+## Color Opacity and Transparency
+- When applying opacity to colors, use `.withValues(alpha: value)` instead of `.withOpacity(value)` to avoid precision loss
+- Use consistent opacity values: 0.1, 0.3, 0.5, 0.7, 0.9 for varying levels of transparency
+
+## Accessibility Considerations
+- Maintain sufficient contrast between text and its background (minimum 4.5:1 for normal text)
+- Avoid communicating information through color alone
+- Include alternative indicators (icons, text) alongside color-based status indicators
+- Test color combinations with color blindness simulators
+
+## Gradients and Effects
+- Use gradients sparingly and consistently
+- SweepGradient is used for the circular animation on the home screen
+- Shadow effects use a consistent color (`AppColors.darkGrey.withValues(alpha: 0.1)`)
+
+When using colors, always reference the `AppColors` class constants rather than hardcoding color values to maintain consistency and make theme updates easier.

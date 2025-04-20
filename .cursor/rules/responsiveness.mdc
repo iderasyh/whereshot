@@ -1,0 +1,47 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Responsiveness Guidelines
+
+This app implements a responsive design approach to ensure proper display across different device sizes and orientations:
+
+## Core Responsive Principles
+- Use of MediaQuery to obtain device dimensions (`MediaQuery.of(context).size`)
+- Relative sizing with multipliers (e.g., `size.width * 0.65`)
+- Flexible layouts using Expanded and Flexible widgets
+- Consistent spacing using the app's spacing system
+
+## Screen Adaptation
+- Home screen adapts circular UI elements based on screen width
+- UI elements scale proportionally to screen size
+- Text sizes remain consistent for readability
+
+## Implementation Example
+From [home_screen.dart](mdc:lib/screens/home_screen.dart):
+```dart
+// Get screen size
+final size = MediaQuery.of(context).size;
+
+// Use relative sizing for UI elements
+Container(
+  width: size.width * 0.65,
+  height: size.width * 0.65,
+  // ...
+)
+```
+
+## Safe Area Usage
+- SafeArea widget protects content from device notches and system UI
+- Ensures UI elements are not obscured by system elements
+
+## Orientation Support
+- Layouts should function in both portrait and landscape where appropriate
+- Use orientation-aware layouts for screens that need to adapt significantly
+
+## Device-Specific Adjustments
+- Use MediaQuery to detect smaller devices and adjust UI accordingly
+- Implement scrolling for content that might not fit on smaller screens
+
+When implementing new screens or modifying existing ones, always ensure that the UI remains usable and visually appealing across different device sizes by following these responsive design principles.

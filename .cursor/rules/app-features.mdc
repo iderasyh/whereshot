@@ -1,0 +1,46 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# App Features
+
+WhereShot is an app that detects locations from photos. These are the primary features and their implementations:
+
+## Location Detection
+- Users can upload photos to identify the location where they were taken
+- The app processes image data to extract location information
+- Location detection processing happens through the [location_detection_provider.dart](mdc:lib/providers/location_detection_provider.dart)
+
+## Image Management
+- Photo selection from device gallery using the `image_picker` package
+- Optional photo storage based on user preferences
+- Image processing with size and quality optimization
+- Maximum image dimensions defined in `AppConstants`
+
+## Credit System
+- Users have credits that are consumed when using the service
+- Credits are displayed as a floating badge on the home screen
+- Credit packs can be purchased through the store screen
+- Credits are managed through the [user_provider.dart](mdc:lib/providers/user_provider.dart)
+
+## User Accounts
+- User authentication and profile management
+- User preferences storage (e.g., default save mode for images)
+- User credit balance tracking
+
+## History Management
+- The app can maintain a history of previously identified locations
+- Historical data is managed through the [history_provider.dart](mdc:lib/providers/history_provider.dart)
+
+## Store Functionality
+- In-app purchases for credit packs
+- Different credit pack tiers with various pricing
+- Visual indication of recommended/best value packs
+
+## Navigation
+- App navigation handled by Go Router
+- Routes defined in [app_router.dart](mdc:lib/router/app_router.dart)
+- Named routes for consistent navigation
+
+When implementing new features, ensure they integrate properly with existing ones and follow the established patterns for state management, UI design, and error handling.

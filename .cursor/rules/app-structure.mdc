@@ -1,0 +1,31 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# App Structure
+
+This Flutter app follows a structured organization pattern with specific directories for different concerns:
+
+## Directory Structure
+- `lib/` - The main source code directory
+  - `screens/` - Contains full-page UI components (e.g., [home_screen.dart](mdc:lib/screens/home_screen.dart), [result_screen.dart](mdc:lib/screens/result_screen.dart))
+  - `widgets/` - Reusable UI components (e.g., [credit_pack_card.dart](mdc:lib/widgets/credit_pack_card.dart), [map_view.dart](mdc:lib/widgets/map_view.dart))
+  - `providers/` - State management using Riverpod (e.g., [user_provider.dart](mdc:lib/providers/user_provider.dart), [history_provider.dart](mdc:lib/providers/history_provider.dart))
+  - `models/` - Data models (e.g., [credit_pack.dart](mdc:lib/models/credit_pack.dart))
+  - `theme/` - UI theme definitions (e.g., [app_theme.dart](mdc:lib/theme/app_theme.dart))
+  - `constants/` - App-wide constants (e.g., [app_constants.dart](mdc:lib/constants/app_constants.dart))
+  - `router/` - Navigation setup using Go Router (e.g., [app_router.dart](mdc:lib/router/app_router.dart))
+
+## Naming Conventions
+- Files use snake_case naming
+- Classes use PascalCase naming
+- Screen widgets have a "Screen" suffix (e.g., HomeScreen)
+- Provider files have a "_provider" suffix
+
+## Flutter Conventions
+- Screen classes extend ConsumerStatefulWidget or ConsumerWidget (Riverpod)
+- Custom painters are defined as separate classes
+- Constants are grouped by functionality in dedicated classes
+
+Always maintain this structure when adding new features to ensure consistency throughout the codebase.
