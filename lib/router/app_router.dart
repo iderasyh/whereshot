@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:whereshot/screens/history_screen.dart';
 import 'package:whereshot/screens/home_screen.dart';
 import 'package:whereshot/screens/result_screen.dart';
 import 'package:whereshot/screens/store_screen.dart';
@@ -8,6 +9,7 @@ enum AppRoute {
   home,
   result,
   store,
+  history,
 }
 
 extension AppRouteExtension on AppRoute {
@@ -19,6 +21,8 @@ extension AppRouteExtension on AppRoute {
         return '/result';
       case AppRoute.store:
         return '/store';
+      case AppRoute.history:
+        return '/history';
     }
   }
   
@@ -48,6 +52,11 @@ class AppRouter {
         path: AppRoute.store.path,
         name: AppRoute.store.name,
         builder: (context, state) => const StoreScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.history.path,
+        name: AppRoute.history.name,
+        builder: (context, state) => const HistoryScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

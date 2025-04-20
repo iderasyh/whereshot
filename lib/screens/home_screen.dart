@@ -324,7 +324,7 @@ class _HomeAppBar extends StatelessWidget {
         IconButton(
           icon: const Icon(Icons.history_rounded, color: AppColors.darkGrey),
           tooltip: 'View History',
-          onPressed: () => context.goNamed(AppRoute.result.name),
+          onPressed: () => context.goNamed(AppRoute.history.name),
         ),
       ],
     );

@@ -147,7 +147,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
-            onPressed: () => context.goNamed(AppRoute.result.name),
+            onPressed: () => context.goNamed(AppRoute.history.name),
           ),
         ],
       ),
