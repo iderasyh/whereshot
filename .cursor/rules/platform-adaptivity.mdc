@@ -1,0 +1,47 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Platform Adaptivity
+
+To provide a native look and feel, the UI must adapt to the specific platform (iOS or Android).
+
+## Requirement
+- Use platform-specific widgets or styles where appropriate.
+- Ensure components like dialogs, switches, and navigation elements conform to platform conventions.
+
+## Implementation
+- Use `Theme.of(context).platform` to check the current platform (`TargetPlatform.iOS` or `TargetPlatform.android`).
+- Utilize the helper method `AppTheme.adaptiveWidget` found in [app_theme.dart](mdc:lib/theme/app_theme.dart) for easily switching between Material (Android) and Cupertino (iOS) widgets.
+
+## Example Usage of `adaptiveWidget`
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:whereshot/theme/app_theme.dart';
+
+// ... inside a widget build method ...
+
+return AppTheme.adaptiveWidget(
+  context: context,
+  material: ElevatedButton(
+    onPressed: () { /* ... */ },
+    child: const Text('Submit'),
+  ),
+  cupertino: CupertinoButton.filled(
+    onPressed: () { /* ... */ },
+    child: const Text('Submit'),
+  ),
+);
+```
+
+## When to Adapt
+Prioritize adapting components that have distinct visual differences or interaction patterns between platforms, such as:
+- Dialogs (`AlertDialog` vs. `CupertinoAlertDialog`)
+- Switches (`Switch` vs. `CupertinoSwitch`)
+- Activity indicators (`CircularProgressIndicator` vs. `CupertinoActivityIndicator`)
+- Buttons (`ElevatedButton`/`TextButton` vs. `CupertinoButton`)
+- App bars / Navigation bars
+
+Adhering to this rule ensures a better user experience by matching the user's expectations for their operating system.
