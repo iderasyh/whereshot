@@ -482,7 +482,7 @@ class _HomeBottomControls extends StatelessWidget {
                 ),
                 cupertino: CupertinoSwitch(
                   value: saveImage,
-                  activeColor: AppColors.accent,
+                  activeTrackColor: AppColors.accent,
                   onChanged: onSaveImageChanged,
                 ),
               ),
@@ -528,3 +528,4 @@ class PatternPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+ 

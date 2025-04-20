@@ -22,13 +22,17 @@ class CreditPackCard extends ConsumerWidget {
           .getPriceString(pack)),
     );
     
+    final bool isPopular = pack.description == 'Popular Choice';
+    final bool isBestValue = pack.description == 'Best Value';
+    final bool isHighlighted = isPopular || isBestValue;
+
     return Card(
-      elevation: 2,
+      elevation: isHighlighted ? 4 : 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.m),
         side: BorderSide(
-          color: pack.id == 'medium' ? AppColors.accent : Colors.transparent,
-          width: pack.id == 'medium' ? 2 : 0,
+          color: isPopular ? AppColors.accent : Colors.transparent,
+          width: isPopular ? 2.5 : 0,
         ),
       ),
       child: Padding(
@@ -36,20 +40,20 @@ class CreditPackCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Badge if best value
-            if (pack.id == 'large')
+            // Badge
+            if (isHighlighted)
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.s,
                   vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.accentAlt,
+                  color: isBestValue ? AppColors.accentAlt : AppColors.accent,
                   borderRadius: BorderRadius.circular(AppRadius.s),
                 ),
-                child: const Text(
-                  'BEST VALUE',
-                  style: TextStyle(
+                child: Text(
+                  pack.description!,
+                  style: const TextStyle(
                     color: AppColors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
@@ -58,32 +62,7 @@ class CreditPackCard extends ConsumerWidget {
                 ),
               ),
             
-            if (pack.id == 'large')
-              const SizedBox(height: AppSpacing.s),
-            
-            // Popular badge
-            if (pack.id == 'medium')
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.s,
-                  vertical: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(AppRadius.s),
-                ),
-                child: const Text(
-                  'POPULAR CHOICE',
-                  style: TextStyle(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            
-            if (pack.id == 'medium')
+            if (isHighlighted)
               const SizedBox(height: AppSpacing.s),
             
             // Pack title
@@ -165,8 +144,10 @@ class CreditPackCard extends ConsumerWidget {
             ElevatedButton(
               onPressed: onPurchase,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
+                backgroundColor: isHighlighted ? AppColors.accentAlt : AppColors.accent,
                 foregroundColor: AppColors.white,
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
               child: const Text('BUY NOW'),
             ),
