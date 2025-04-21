@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../constants/app_constants.dart';
 import '../models/credit_pack.dart';
@@ -11,7 +12,6 @@ import '../router/app_router.dart';
 import '../theme/app_theme.dart';
 import '../widgets/async_value_widget.dart';
 import '../widgets/credit_pack_card.dart';
-import '../widgets/credits_display.dart';
 import '../widgets/custom_app_bar.dart';
 
 class StoreScreen extends ConsumerStatefulWidget {
@@ -22,29 +22,28 @@ class StoreScreen extends ConsumerStatefulWidget {
 }
 
 class _StoreScreenState extends ConsumerState<StoreScreen>
-    with SingleTickerProviderStateMixin {
-  bool _isLoading = false;
-  late AnimationController _animationController;
+    with TickerProviderStateMixin {
+  bool _isProcessing = false;
+  late AnimationController _staggeredController;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
+    _staggeredController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 700),
     )..forward();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _staggeredController.dispose();
     super.dispose();
   }
 
   Future<void> _purchaseCreditPack(CreditPack pack) async {
-    setState(() {
-      _isLoading = true;
-    });
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
 
     try {
       final success = await ref
@@ -52,59 +51,48 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
           .purchaseCreditPack(pack);
 
       if (mounted) {
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(AppConstants.purchaseSuccess),
-              backgroundColor: AppColors.successGreen,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(AppConstants.purchaseError),
-              backgroundColor: AppColors.errorRed,
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? AppConstants.purchaseSuccess : AppConstants.purchaseError),
+            backgroundColor: success ? AppColors.successGreen : AppColors.errorRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('Purchase Error: ${e.toString()}'),
             backgroundColor: AppColors.errorRed,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isProcessing = false);
       }
     }
   }
 
   Future<void> _restorePurchases() async {
-    setState(() {
-      _isLoading = true;
-    });
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
 
     try {
-      final restored =
-          await ref.read(purchaseNotifierProvider.notifier).restorePurchases();
+      final restored = await ref
+          .read(purchaseNotifierProvider.notifier)
+          .restorePurchases();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              restored
-                  ? 'Purchases restored successfully!'
-                  : 'No purchases to restore',
+              restored ? 'Purchases restored successfully!' : 'No purchases found to restore.',
             ),
-            backgroundColor:
-                restored ? AppColors.successGreen : AppColors.textGrey,
+            backgroundColor: restored ? AppColors.successGreen : AppColors.textGrey,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -112,16 +100,15 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('Restore Error: ${e.toString()}'),
             backgroundColor: AppColors.errorRed,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isProcessing = false);
       }
     }
   }
@@ -131,8 +118,10 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     final purchaseAsync = ref.watch(purchaseNotifierProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.lightGrey,
       appBar: CustomAppBar(
-        title: 'Store',
+        title: 'Get Credits',
+        backgroundColor: AppColors.lightGrey,
         leading: AppTheme.adaptiveWidget(
           context: context,
           material: IconButton(
@@ -145,211 +134,183 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () => context.goNamed(AppRoute.history.name),
+          TextButton.icon(
+            icon: const Icon(Icons.restore, size: 20),
+            label: const Text('Restore'),
+            onPressed: _isProcessing ? null : _restorePurchases,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.accent,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+            ),
           ),
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.m),
-          child: CustomPaint(
-            painter: PatternPainter(Theme.of(context).scaffoldBackgroundColor),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header with credits display
-                SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, -0.2),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: _animationController,
-                      curve: Curves.easeOut,
-                    ),
-                  ),
-                  child: FadeTransition(
-                    opacity: _animationController,
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.m),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Theme.of(context).colorScheme.primaryContainer,
-                            Theme.of(
-                              context,
-                            ).colorScheme.primaryContainer.withValues(alpha: 0.7),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(AppRadius.l),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          const CreditsDisplay(),
-                          const SizedBox(height: AppSpacing.m),
-                          Text(
-                            'Get more credits to analyze photos',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+        bottom: false,
+        child: AsyncValueWidget(
+          value: purchaseAsync,
+          loading: _buildLoadingState(),
+          error: (error, stackTrace) => _buildErrorState(context, error),
+          data: (packs) => _buildStoreContent(context, packs),
+        ),
+      ),
+    );
+  }
 
-                const SizedBox(height: AppSpacing.l),
+  Widget _buildStoreContent(BuildContext context, List<CreditPack> packs) {
+    if (packs.isEmpty) {
+      return _buildEmptyState(context);
+    }
 
-                // Credit packs list
-                Expanded(
-                  child: AsyncValueWidget(
-                    value: purchaseAsync,
-                    loading: const Center(child: CircularProgressIndicator()),
-                    error:
-                        (error, stackTrace) => Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.error_outline,
-                                color: AppColors.errorRed,
-                                size: 48,
-                              ),
-                              const SizedBox(height: AppSpacing.m),
-                              Text(
-                                'Failed to load credit packs',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(color: AppColors.errorRed),
-                              ),
-                              const SizedBox(height: AppSpacing.s),
-                              ElevatedButton(
-                                onPressed:
-                                    () => ref.refresh(purchaseNotifierProvider),
-                                child: const Text('Retry'),
-                              ),
-                            ],
-                          ),
-                        ),
-                    data: (packs) {
-                      if (packs.isEmpty) {
-                        return const Center(
-                          child: Text('No credit packs available'),
-                        );
-                      }
+    return ListView.builder(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.m,
+        right: AppSpacing.m,
+        top: AppSpacing.l,
+        bottom: AppSpacing.l,
+      ),
+      itemCount: packs.length,
+      itemBuilder: (context, index) {
+        final pack = packs[index];
+        
+        final intervalStart = (index * 0.15).clamp(0.0, 0.8);
+        final intervalEnd = (intervalStart + 0.4).clamp(0.0, 1.0);
+        
+        final slideAnimation = Tween<Offset>(
+          begin: const Offset(0, 0.3),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(
+          parent: _staggeredController,
+          curve: Interval(intervalStart, intervalEnd, curve: Curves.easeOutCubic),
+        ));
+        
+        final fadeAnimation = Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).animate(CurvedAnimation(
+          parent: _staggeredController,
+          curve: Interval(intervalStart, intervalEnd, curve: Curves.easeOutCubic),
+        ));
 
-                      return ListView.builder(
-                        itemCount: packs.length,
-                        itemBuilder: (context, index) {
-                          final pack = packs[index];
-                          return AnimatedBuilder(
-                            animation: _animationController,
-                            builder: (context, child) {
-                              final delay = index * 0.2;
-                              final slideAnimation = Tween<Offset>(
-                                begin: const Offset(0.3, 0),
-                                end: Offset.zero,
-                              ).animate(
-                                CurvedAnimation(
-                                  parent: _animationController,
-                                  curve: Interval(
-                                    delay.clamp(0.0, 0.8),
-                                    (delay + 0.2).clamp(0.0, 1.0),
-                                    curve: Curves.easeOut,
-                                  ),
-                                ),
-                              );
-
-                              final fadeAnimation = Tween<double>(
-                                begin: 0.0,
-                                end: 1.0,
-                              ).animate(
-                                CurvedAnimation(
-                                  parent: _animationController,
-                                  curve: Interval(
-                                    delay.clamp(0.0, 0.8),
-                                    (delay + 0.2).clamp(0.0, 1.0),
-                                    curve: Curves.easeOut,
-                                  ),
-                                ),
-                              );
-
-                              return FadeTransition(
-                                opacity: fadeAnimation,
-                                child: SlideTransition(
-                                  position: slideAnimation,
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(
-                                      bottom: AppSpacing.m,
-                                    ),
-                                    child: CreditPackCard(
-                                      pack: pack,
-                                      onPurchase:
-                                          _isLoading
-                                              ? null
-                                              : () => _purchaseCreditPack(pack),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-
-                // Restore purchases button with animation
-                SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.5),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: _animationController,
-                      curve: const Interval(0.6, 1.0, curve: Curves.easeOut),
-                    ),
-                  ),
-                  child: FadeTransition(
-                    opacity: CurvedAnimation(
-                      parent: _animationController,
-                      curve: const Interval(0.6, 1.0),
-                    ),
-                    child: Container(
-                      margin: const EdgeInsets.only(top: AppSpacing.m),
-                      child: OutlinedButton.icon(
-                        onPressed: _isLoading ? null : _restorePurchases,
-                        icon: const Icon(Icons.restore),
-                        label: const Text('Restore Purchases'),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.5),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.m,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+        return FadeTransition(
+          opacity: fadeAnimation,
+          child: SlideTransition(
+            position: slideAnimation,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.l),
+              child: CreditPackCard(
+                pack: pack,
+                onPurchase: _isProcessing ? null : () => _purchaseCreditPack(pack),
+              ),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return ListView( 
+      padding: const EdgeInsets.only(
+        left: AppSpacing.m,
+        right: AppSpacing.m,
+        top: AppSpacing.l,
+        bottom: AppSpacing.l,
+      ),
+      children: List.generate(3, (index) => Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.l),
+        child: Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            height: 180,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadius.l),
+            ),
+          ),
+        ),
+      )),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.storefront_outlined,
+              color: AppColors.textGrey.withValues(alpha: 0.6),
+              size: 64,
+            ),
+            const SizedBox(height: AppSpacing.l),
+            Text(
+              'Store Not Available',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.s),
+            Text(
+              'Credit packs couldn\'t be loaded at this time. Please check back later.',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppColors.textGrey,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, Object error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              color: AppColors.errorRed.withValues(alpha: 0.7),
+              size: 64,
+            ),
+            const SizedBox(height: AppSpacing.l),
+            Text(
+              'Error Loading Store',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.s),
+            Text(
+              'Something went wrong while loading credit packs. Please try again.\nError: ${error.toString()}',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppColors.textGrey,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            ElevatedButton.icon(
+              onPressed: () => ref.refresh(purchaseNotifierProvider),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry Loading'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accentAlt,
+                foregroundColor: AppColors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl,
+                  vertical: AppSpacing.m,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

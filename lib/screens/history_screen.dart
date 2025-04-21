@@ -1,9 +1,6 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/detection_result.dart';
 import '../providers/history_provider.dart';
@@ -11,8 +8,7 @@ import '../router/app_router.dart';
 import '../theme/app_theme.dart';
 import '../widgets/async_value_widget.dart';
 import '../widgets/custom_app_bar.dart';
-import '../widgets/detection_card.dart';
-import '../widgets/map_view.dart';
+import '../widgets/history_list_item.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key});
@@ -23,15 +19,16 @@ class HistoryScreen extends ConsumerStatefulWidget {
 
 class _HistoryScreenState extends ConsumerState<HistoryScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  DetectionResult? _selectedDetection;
+  late AnimationController _staggeredController;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
+    _staggeredController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(
+        milliseconds: 600,
+      ), // Total duration for staggered items
     )..forward();
 
     // Refresh history when screen loads
@@ -42,35 +39,91 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _staggeredController.dispose();
     super.dispose();
   }
 
-  void _clearAllHistory() async {
-    final shouldClear = await showDialog<bool>(
+  Future<bool?> _confirmClearAll() async {
+    return showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear History'),
-        content: const Text('This will delete all your detection history. This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('CANCEL'),
+      builder:
+          (context) => AlertDialog.adaptive(
+            title: const Text('Clear All History?'),
+            content: const Text(
+              'This will permanently delete all your detection history. This action cannot be undone.',
+            ),
+            actions: [
+              adaptiveAction(
+                context,
+                'Cancel',
+                () => Navigator.of(context).pop(false),
+              ),
+              adaptiveAction(
+                context,
+                'Clear All',
+                () => Navigator.of(context).pop(true),
+                isDestructive: true,
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('CLEAR ALL'),
+    );
+  }
+
+  Future<bool?> _confirmDeleteItem() async {
+    return showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog.adaptive(
+            title: const Text('Delete Item?'),
+            content: const Text(
+              'Are you sure you want to delete this item from your history?',
+            ),
+            actions: [
+              adaptiveAction(
+                context,
+                'Cancel',
+                () => Navigator.of(context).pop(false),
+              ),
+              adaptiveAction(
+                context,
+                'Delete',
+                () => Navigator.of(context).pop(true),
+                isDestructive: true,
+              ),
+            ],
           ),
-        ],
+    );
+  }
+
+  Widget adaptiveAction(
+    BuildContext context,
+    String text,
+    VoidCallback onPressed, {
+    bool isDestructive = false,
+  }) {
+    final style = TextStyle(
+      color: isDestructive ? AppColors.errorRed : AppColors.accent,
+    );
+    return AppTheme.adaptiveWidget(
+      context: context,
+      material: TextButton(
+        onPressed: onPressed,
+        child: Text(text, style: style),
+      ),
+      cupertino: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: 12.0,
+              horizontal: 8.0,
+            ),
+            child: Text(text, style: style),
+          ),
+        ),
       ),
     );
-
-    if (shouldClear == true && mounted) {
-      await ref.read(historyNotifierProvider.notifier).clearHistory();
-      setState(() {
-        _selectedDetection = null;
-      });
-    }
   }
 
   @override
@@ -92,374 +145,187 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.storefront),
-            onPressed: () => context.goNamed(AppRoute.store.name),
+          // Clear all button (only if history exists)
+          historyAsync.maybeWhen(
+            data:
+                (history) =>
+                    history.isNotEmpty
+                        ? IconButton(
+                          tooltip: 'Clear All History',
+                          icon: const Icon(Icons.delete_sweep_outlined),
+                          onPressed: () async {
+                            final shouldClear = await _confirmClearAll();
+                            if (shouldClear == true && mounted) {
+                              await ref
+                                  .read(historyNotifierProvider.notifier)
+                                  .clearHistory();
+                              _staggeredController
+                                  .reset(); // Reset animation for empty state
+                              _staggeredController.forward();
+                            }
+                          },
+                        )
+                        : const SizedBox.shrink(),
+            orElse: () => const SizedBox.shrink(),
           ),
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.m),
-          child: CustomPaint(
-            painter: PatternPainter(Theme.of(context).scaffoldBackgroundColor),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header with title and clear button
-                SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, -0.2),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: _animationController,
-                      curve: Curves.easeOut,
-                    ),
+        bottom: false, // Let the list padding handle bottom safe area
+        child: CustomPaint(
+          painter: SubtleGridPainter(), // New subtle background
+          child: AsyncValueWidget(
+            value: historyAsync,
+            error: (error, stackTrace) => _buildErrorState(context),
+            data: (history) => _buildHistoryContent(context, history),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryContent(
+    BuildContext context,
+    List<DetectionResult> history,
+  ) {
+    if (history.isEmpty) {
+      return _buildEmptyState(context);
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.m,
+        right: AppSpacing.m,
+        top: AppSpacing.l,
+        bottom: AppSpacing.l,
+      ),
+      itemCount: history.length,
+      separatorBuilder:
+          (context, index) => const SizedBox(height: AppSpacing.m),
+      itemBuilder: (context, index) {
+        final detection = history[index];
+
+        // Calculate animation delay for staggered effect
+        final intervalStart = (index * 0.1).clamp(0.0, 0.8);
+        final intervalEnd = (intervalStart + 0.3).clamp(0.0, 1.0);
+
+        final slideAnimation = Tween<Offset>(
+          begin: const Offset(0, 0.2), // Slide up from bottom
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _staggeredController,
+            curve: Interval(
+              intervalStart,
+              intervalEnd,
+              curve: Curves.easeOutQuad,
+            ),
+          ),
+        );
+
+        final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(
+            parent: _staggeredController,
+            curve: Interval(
+              intervalStart,
+              intervalEnd,
+              curve: Curves.easeOutQuad,
+            ),
+          ),
+        );
+
+        return FadeTransition(
+          opacity: fadeAnimation,
+          child: SlideTransition(
+            position: slideAnimation,
+            child: HistoryListItem(
+              detection: detection,
+              onTap: () {
+                context.goNamed(AppRoute.result.name, extra: detection.id);
+              },
+              onConfirmDelete: _confirmDeleteItem,
+              onDeleted: () {
+                ref
+                    .read(historyNotifierProvider.notifier)
+                    .deleteResult(detection);
+                // Optionally show a snackbar
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Deleted ${detection.locationName}'),
+                    duration: const Duration(seconds: 2),
                   ),
-                  child: FadeTransition(
-                    opacity: _animationController,
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.m),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Theme.of(context).colorScheme.primaryContainer,
-                            Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.7),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(AppRadius.l),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: AppSpacing.s),
-                          Text(
-                            'Your Detection History',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppSpacing.m),
-                          OutlinedButton.icon(
-                            onPressed: _clearAllHistory,
-                            icon: const Icon(Icons.delete_sweep),
-                            label: const Text('Clear All History'),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _staggeredController, curve: Curves.easeOut),
+    );
+
+    final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _staggeredController, curve: Curves.easeOut),
+    );
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: FadeTransition(
+          opacity: fadeAnimation,
+          child: SlideTransition(
+            position: slideAnimation,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.l),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.map_outlined,
+                    color: AppColors.accent.withValues(alpha: 0.6),
+                    size: 64,
                   ),
                 ),
-
                 const SizedBox(height: AppSpacing.l),
-
-                // Selected detection details
-                if (_selectedDetection != null)
-                  SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.2),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: _animationController,
-                        curve: Curves.easeOut,
-                      ),
-                    ),
-                    child: FadeTransition(
-                      opacity: _animationController,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: AppSpacing.m),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(AppRadius.l),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(AppSpacing.m),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      'Selected Location',
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.close),
-                                    onPressed: () {
-                                      setState(() {
-                                        _selectedDetection = null;
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Divider(height: 1),
-                            Padding(
-                              padding: const EdgeInsets.all(AppSpacing.m),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _selectedDetection!.locationName,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.s),
-                                  if (_selectedDetection!.hasCoordinates)
-                                    Text(
-                                      'Coordinates: ${_selectedDetection!.latitude!.toStringAsFixed(4)}, ${_selectedDetection!.longitude!.toStringAsFixed(4)}',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.textGrey,
-                                      ),
-                                    ),
-                                  Text(
-                                    'Detected: ${_formatTimestamp(_selectedDetection!.timestamp)}',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: AppColors.textGrey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (_selectedDetection!.hasCoordinates)
-                              SizedBox(
-                                height: 200,
-                                child: ClipRRect(
-                                  borderRadius: const BorderRadius.only(
-                                    bottomLeft: AppRadius.radiusL,
-                                    bottomRight: AppRadius.radiusL,
-                                  ),
-                                  child: MapView(
-                                    initialPosition: LatLng(
-                                      _selectedDetection!.latitude!,
-                                      _selectedDetection!.longitude!,
-                                    ),
-                                    markers: {
-                                      Marker(
-                                        markerId: MarkerId(_selectedDetection!.id),
-                                        position: LatLng(
-                                          _selectedDetection!.latitude!,
-                                          _selectedDetection!.longitude!,
-                                        ),
-                                        infoWindow: InfoWindow(
-                                          title: _selectedDetection!.locationName,
-                                        ),
-                                      ),
-                                    },
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
+                Text(
+                  'No History Found',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-
-                // History list
-                Expanded(
-                  child: AsyncValueWidget(
-                    value: historyAsync,
-                    loading: const Center(child: CircularProgressIndicator()),
-                    error: (error, stackTrace) => Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            color: AppColors.errorRed,
-                            size: 48,
-                          ),
-                          const SizedBox(height: AppSpacing.m),
-                          Text(
-                            'Failed to load history',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(color: AppColors.errorRed),
-                          ),
-                          const SizedBox(height: AppSpacing.s),
-                          ElevatedButton(
-                            onPressed: () => ref.refresh(historyNotifierProvider),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.s),
+                Text(
+                  'Locations you analyze will appear here. Let\'s find your first one!',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: AppColors.textGrey),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                ElevatedButton.icon(
+                  onPressed: () => context.goNamed(AppRoute.home.name),
+                  icon: const Icon(Icons.explore_outlined),
+                  label: const Text('Analyze a Photo'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: AppColors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl,
+                      vertical: AppSpacing.m,
                     ),
-                    data: (history) {
-                      if (history.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.history,
-                                color: AppColors.textGrey,
-                                size: 48,
-                              ),
-                              const SizedBox(height: AppSpacing.m),
-                              Text(
-                                'No detection history yet',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      color: AppColors.textGrey,
-                                    ),
-                              ),
-                              const SizedBox(height: AppSpacing.l),
-                              ElevatedButton.icon(
-                                onPressed: () => context.goNamed(AppRoute.home.name),
-                                icon: const Icon(Icons.add_a_photo),
-                                label: const Text('Detect a Location'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.accent,
-                                  foregroundColor: AppColors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.l,
-                                    vertical: AppSpacing.m,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      return ListView.builder(
-                        itemCount: history.length,
-                        itemBuilder: (context, index) {
-                          final detection = history[index];
-                          final isSelected = _selectedDetection?.id == detection.id;
-                          
-                          final delay = index * 0.1;
-                          final slideAnimation = Tween<Offset>(
-                            begin: const Offset(0.3, 0),
-                            end: Offset.zero,
-                          ).animate(
-                            CurvedAnimation(
-                              parent: _animationController,
-                              curve: Interval(
-                                delay.clamp(0.0, 0.8),
-                                (delay + 0.2).clamp(0.0, 1.0),
-                                curve: Curves.easeOut,
-                              ),
-                            ),
-                          );
-
-                          final fadeAnimation = Tween<double>(
-                            begin: 0.0,
-                            end: 1.0,
-                          ).animate(
-                            CurvedAnimation(
-                              parent: _animationController,
-                              curve: Interval(
-                                delay.clamp(0.0, 0.8),
-                                (delay + 0.2).clamp(0.0, 1.0),
-                                curve: Curves.easeOut,
-                              ),
-                            ),
-                          );
-
-                          return FadeTransition(
-                            opacity: fadeAnimation,
-                            child: SlideTransition(
-                              position: slideAnimation,
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: AppSpacing.m),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedDetection = detection;
-                                    });
-                                    // Navigate to ResultScreen with the detection ID
-                                    context.goNamed(
-                                      AppRoute.result.name,
-                                      extra: detection.id,
-                                    );
-                                  },
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: isSelected
-                                          ? Border.all(
-                                              color: AppColors.accent,
-                                              width: 2.5,
-                                            )
-                                          : null,
-                                      borderRadius: BorderRadius.circular(AppRadius.l),
-                                    ),
-                                    child: DetectionCard(
-                                      detection: detection,
-                                      showActions: true,
-                                      onDelete: () async {
-                                        final shouldDelete = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: const Text('Delete Item'),
-                                            content: const Text(
-                                                'Are you sure you want to delete this item from your history?'),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.of(context).pop(false),
-                                                child: const Text('CANCEL'),
-                                              ),
-                                              TextButton(
-                                                onPressed: () => Navigator.of(context).pop(true),
-                                                child: const Text('DELETE'),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                        
-                                        if (shouldDelete == true && mounted) {
-                                          await ref
-                                              .read(historyNotifierProvider.notifier)
-                                              .deleteResult(detection);
-                                          
-                                          if (_selectedDetection?.id == detection.id) {
-                                            setState(() {
-                                              _selectedDetection = null;
-                                            });
-                                          }
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
+                    textStyle: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
               ],
@@ -469,41 +335,76 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
       ),
     );
   }
-  
-  String _formatTimestamp(DateTime timestamp) {
-    return '${timestamp.day}/${timestamp.month}/${timestamp.year} at '
-        '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
+
+  Widget _buildErrorState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.cloud_off_outlined,
+              color: AppColors.errorRed.withValues(alpha: 0.7),
+              size: 64,
+            ),
+            const SizedBox(height: AppSpacing.l),
+            Text(
+              'Failed to Load History',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.s),
+            Text(
+              'Couldn\'t retrieve your saved locations. Please check your connection and try again.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: AppColors.textGrey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            ElevatedButton.icon(
+              onPressed: () => ref.refresh(historyNotifierProvider),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry Loading'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accentAlt,
+                foregroundColor: AppColors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl,
+                  vertical: AppSpacing.m,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
-class PatternPainter extends CustomPainter {
-  final Color backgroundColor;
-  final math.Random _random = math.Random();
-
-  PatternPainter(this.backgroundColor);
-
+// New painter for a subtle background grid
+class SubtleGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw background color first to ensure pattern is on top
-    canvas.drawRect(Offset.zero & size, Paint()..color = backgroundColor);
+    final paint =
+        Paint()
+          ..color = AppColors.darkGrey.withValues(alpha: 0.02)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0;
 
-    final paint = Paint()
-        ..color = AppColors.darkGrey.withValues(alpha: 0.03)
-        ..style = PaintingStyle.fill;
+    const double step = 30.0;
 
-    const spacing = 25.0;
-    const dotSize = 1.5;
-
-    for (double x = -spacing; x < size.width + spacing; x += spacing) {
-      for (double y = -spacing; y < size.height + spacing; y += spacing) {
-        final offsetX = (x + (_random.nextDouble() - 0.5) * 5) % (size.width + spacing);
-        final offsetY = (y + (_random.nextDouble() - 0.5) * 5) % (size.height + spacing);
-        canvas.drawCircle(Offset(offsetX, offsetY), dotSize, paint);
-      }
+    for (double i = 0; i < size.width; i += step) {
+      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
+    }
+    for (double i = 0; i < size.height; i += step) {
+      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant PatternPainter oldDelegate) =>
-      oldDelegate.backgroundColor != backgroundColor;
-} 
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
