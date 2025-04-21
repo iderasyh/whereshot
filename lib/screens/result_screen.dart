@@ -80,28 +80,28 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                       const SizedBox(height: AppSpacing.m),
                       
                       // Map view if coordinates available
-                      if (detection.hasCoordinates) 
-                        SizedBox(
-                          height: 200,
-                          child: MapView(
-                            initialPosition: LatLng(
-                              detection.latitude!,
-                              detection.longitude!,
-                            ),
-                            markers: {
-                              Marker(
-                                markerId: MarkerId(detection.id),
-                                position: LatLng(
-                                  detection.latitude!,
-                                  detection.longitude!,
-                                ),
-                                infoWindow: InfoWindow(
-                                  title: detection.locationName,
-                                ),
-                              ),
-                            },
-                          ),
-                        ),
+                      // if (detection.hasCoordinates) 
+                      //   SizedBox(
+                      //     height: 200,
+                      //     child: MapView(
+                      //       initialPosition: LatLng(
+                      //         detection.latitude!,
+                      //         detection.longitude!,
+                      //       ),
+                      //       markers: {
+                      //         Marker(
+                      //           markerId: MarkerId(detection.id),
+                      //           position: LatLng(
+                      //             detection.latitude!,
+                      //             detection.longitude!,
+                      //           ),
+                      //           infoWindow: InfoWindow(
+                      //             title: detection.locationName,
+                      //           ),
+                      //         ),
+                      //       },
+                      //     ),
+                      //   ),
                       
                       const SizedBox(height: AppSpacing.l),
                       

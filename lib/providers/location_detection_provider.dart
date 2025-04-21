@@ -18,7 +18,7 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
   }
 
   // Detect location from File
-  Future<void> detectLocationFromFile(
+  Future<bool> detectLocationFromFile(
     File imageFile, {
     bool saveImage = true,
   }) async {
@@ -31,14 +31,14 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
       final userNotifier = ref.read(userNotifierProvider.notifier);
 
       // Check if user has enough credits
-      final hasCredits = await userNotifier.useCredits(1);
-      if (!hasCredits) {
-        state = AsyncValue.error(
-          AppConstants.noCreditsError,
-          StackTrace.current,
-        );
-        return;
-      }
+      // final hasCredits = await userNotifier.useCredits(1);
+      // if (!hasCredits) {
+      //   state = AsyncValue.error(
+      //     AppConstants.noCreditsError,
+      //     StackTrace.current,
+      //   );
+      //   return state.hasError;
+      // }
 
       // Generate a unique ID for this detection
       final id = const Uuid().v4();
@@ -83,8 +83,10 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
       await storageService.saveDetectionResult(result);
 
       state = AsyncValue.data(result);
+      return state.hasError;
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
+      return state.hasError;
     }
   }
 

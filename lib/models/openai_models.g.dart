@@ -110,11 +110,11 @@ OpenAIOutputItem _$OpenAIOutputItemFromJson(Map<String, dynamic> json) =>
     OpenAIOutputItem(
       type: json['type'] as String,
       id: json['id'] as String,
-      status: json['status'] as String,
-      role: json['role'] as String,
+      status: json['status'] as String?,
+      role: json['role'] as String?,
       content:
-          (json['content'] as List<dynamic>)
-              .map(
+          (json['content'] as List<dynamic>?)
+              ?.map(
                 (e) => OpenAIOutputContent.fromJson(e as Map<String, dynamic>),
               )
               .toList(),
@@ -124,9 +124,10 @@ Map<String, dynamic> _$OpenAIOutputItemToJson(OpenAIOutputItem instance) =>
     <String, dynamic>{
       'type': instance.type,
       'id': instance.id,
-      'status': instance.status,
-      'role': instance.role,
-      'content': instance.content.map((e) => e.toJson()).toList(),
+      if (instance.status case final value?) 'status': value,
+      if (instance.role case final value?) 'role': value,
+      if (instance.content?.map((e) => e.toJson()).toList() case final value?)
+        'content': value,
     };
 
 OpenAIOutputContent _$OpenAIOutputContentFromJson(Map<String, dynamic> json) =>

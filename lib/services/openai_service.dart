@@ -29,11 +29,11 @@ class OpenAIService {
             "The country of the location (e.g., France, or unknown).",
       },
       "latitude": {
-        "type": ["number", "null"],
+        "type": "number",
         "description": "The latitude of the location. Null if unknown.",
       },
       "longitude": {
-        "type": ["number", "null"],
+        "type": "number",
         "description": "The longitude of the location. Null if unknown.",
       },
     },
@@ -44,6 +44,7 @@ class OpenAIService {
       "latitude",
       "longitude",
     ],
+    "additionalProperties": false,
   };
 
   OpenAIService({required String apiKey, Dio? dio})
@@ -77,11 +78,14 @@ class OpenAIService {
 
       final response = await _sendRequest(request);
 
+      print('Response: ${response.toJson()}');
+
       // Use the helper method to extract structured info
       return extractLocationInfo(response);
     } on DioException catch (e) {
       throw _handleDioError(e);
-    } catch (e) {
+    } catch (e, st) {
+      print('Stack trace: $st');
       print('Error analyzing image file: $e');
       throw Exception('Error analyzing image: ${e.toString()}');
     }
@@ -160,20 +164,31 @@ class OpenAIService {
       data: request.toJson(),
       options: Options(headers: _headers),
     );
+
+    print('Response data: ${response.data}');
     return OpenAIResponse.fromJson(response.data);
   }
 
-  // Updated function to extract LocationInfo, assuming structure
+  // Updated function to extract LocationInfo, finding the first 'message' output
   LocationInfo extractLocationInfo(OpenAIResponse response) {
     String rawJsonString = 'Error: Could not extract JSON content';
     try {
-      // --- Direct Access (Less robust, assumes fixed structure) ---
-      if (response.output.isEmpty || response.output[0].content.isEmpty) {
-        throw Exception('OpenAI response output or content array is empty.');
+      // Find the first output item of type 'message'
+      final messageOutput = response.output.firstWhere(
+        (item) => item.type == 'message',
+        orElse: () => throw Exception('No output item with type \'message\' found.'),
+      );
+
+      // Check if the found message has content and if it's not empty
+      if (messageOutput.content == null || messageOutput.content!.isEmpty) {
+        throw Exception(''
+          'Found \'message\' output item, but its content is null or empty.'
+        );
       }
-      // Directly access the text content, assuming it's the JSON string
-      rawJsonString = response.output[0].content[0].text;
-      // -----------------------------------------------------------
+
+      // Access the text from the first content item within the message
+      // Assuming the first content item is the one holding the JSON string
+      rawJsonString = messageOutput.content![0].text;
 
       // Attempt to parse the assumed JSON string
       Map<String, dynamic> jsonResponse = jsonDecode(rawJsonString);
@@ -184,13 +199,10 @@ class OpenAIService {
     } on FormatException catch (e) {
       print('Failed to parse JSON from OpenAI response: $e');
       print('Raw content assumed to be JSON: $rawJsonString');
-      // Use the updated error factory
       return LocationInfo.error('Failed to parse location data', rawJsonString);
     } catch (e) {
-      // Catch potential index errors or other issues during access/parsing
       print('Error extracting location info: $e');
       print('Raw content (if extracted): $rawJsonString');
-      // Use the updated error factory
       return LocationInfo.error('Error processing OpenAI response: ${e.toString()}', rawJsonString);
     }
   }

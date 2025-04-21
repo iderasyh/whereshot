@@ -8,6 +8,20 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Read local.properties
+val localProperties = java.util.Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { stream ->
+        localProperties.load(stream)
+    }
+}
+
+// Function to get property or default value
+fun getApiKey(propertyKey: String): String {
+    return localProperties.getProperty(propertyKey) ?: ""
+}
+
 android {
     namespace = "com.hysatech.whereshot"
     compileSdk = flutter.compileSdkVersion
@@ -31,6 +45,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Set the API key from local.properties
+        manifestPlaceholders["googleAndroidApiKey"] = getApiKey("googleAndroidApiKey")
     }
 
     buildTypes {

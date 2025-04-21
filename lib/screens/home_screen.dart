@@ -14,6 +14,8 @@ import '../router/app_router.dart';
 import '../theme/app_theme.dart';
 import '../widgets/async_value_widget.dart';
 import '../models/user.dart';
+import '../utils/async_value_ui.dart';
+import '../models/detection_result.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -161,11 +163,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
 
     try {
-      await ref
+      final hasError = await ref
           .read(locationDetectionNotifierProvider.notifier)
           .detectLocationFromFile(imageFile, saveImage: _saveImage);
 
-      if (mounted) {
+      print('hasError: $hasError');
+
+      if (!hasError && mounted) {
         context.goNamed(AppRoute.result.name);
       }
     } catch (e) {
@@ -188,6 +192,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<DetectionResult?>>(
+      locationDetectionNotifierProvider,
+      (_, next) {
+        next.showAlertDialogOnError(context);
+      },
+    );
+
     final userAsync = ref.watch(userNotifierProvider);
     final size = MediaQuery.of(context).size;
 
@@ -239,7 +250,10 @@ class _HomeAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final creditsLoadingWidget = Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.m,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
         color: AppColors.white,
         shape: BoxShape.rectangle,
@@ -308,9 +322,11 @@ class _HomeAppBar extends StatelessWidget {
               ),
             );
           },
-          error: (e, st) => const Icon(Icons.error_outline, color: AppColors.errorRed),
+          error:
+              (e, st) =>
+                  const Icon(Icons.error_outline, color: AppColors.errorRed),
         ),
-        
+
         Text(
           AppConstants.appName,
           style: Theme.of(context).textTheme.headlineLarge?.copyWith(
@@ -320,7 +336,7 @@ class _HomeAppBar extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
-        
+
         IconButton(
           icon: const Icon(Icons.history_rounded, color: AppColors.darkGrey),
           tooltip: 'View History',
@@ -395,39 +411,40 @@ class _AnimatedUploadButton extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: isPickingPhoto || isProcessing
-                        ? Center(
-                            child: AppTheme.adaptiveWidget(
-                              context: context,
-                              material: const CircularProgressIndicator(),
-                              cupertino: const CupertinoActivityIndicator(),
+                    child:
+                        isPickingPhoto || isProcessing
+                            ? Center(
+                              child: AppTheme.adaptiveWidget(
+                                context: context,
+                                material: const CircularProgressIndicator(),
+                                cupertino: const CupertinoActivityIndicator(),
+                              ),
+                            )
+                            : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.upload_rounded,
+                                  size: 48,
+                                  color: AppColors.accent,
+                                ),
+                                const SizedBox(height: AppSpacing.s),
+                                Text(
+                                  'Share a photo',
+                                  style: TextStyle(
+                                    color: AppColors.darkGrey,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  'Discover exact location',
+                                  style: TextStyle(
+                                    color: AppColors.textGrey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
-                          )
-                        : Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.upload_rounded,
-                                size: 48,
-                                color: AppColors.accent,
-                              ),
-                              const SizedBox(height: AppSpacing.s),
-                              Text(
-                                'Share a photo',
-                                style: TextStyle(
-                                  color: AppColors.darkGrey,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                'Discover exact location',
-                                style: TextStyle(
-                                  color: AppColors.textGrey,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
                   ),
                 ],
               ),
@@ -492,9 +509,7 @@ class _HomeBottomControls extends StatelessWidget {
         const SizedBox(height: AppSpacing.m),
         TextButton(
           onPressed: () => context.goNamed(AppRoute.store.name),
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.textGrey,
-          ),
+          style: TextButton.styleFrom(foregroundColor: AppColors.textGrey),
           child: const Text('Need inspiration? Get more credits'),
         ),
       ],
@@ -528,4 +543,3 @@ class PatternPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
- 

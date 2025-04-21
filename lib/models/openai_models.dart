@@ -151,16 +151,16 @@ class OpenAIResponse {
 class OpenAIOutputItem {
   final String type; // e.g., "message"
   final String id;
-  final String status;
-  final String role; // e.g., "assistant"
-  final List<OpenAIOutputContent> content; // Changed to list
+  final String? status; // Made nullable
+  final String? role; // Made nullable
+  final List<OpenAIOutputContent>? content; // Made nullable
 
   OpenAIOutputItem({
     required this.type,
     required this.id,
-    required this.status,
-    required this.role,
-    required this.content,
+    this.status, // Updated constructor
+    this.role, // Updated constructor
+    this.content, // Updated constructor
   });
 
    factory OpenAIOutputItem.fromJson(Map<String, dynamic> json) =>
