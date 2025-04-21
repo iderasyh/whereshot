@@ -400,6 +400,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                                     setState(() {
                                       _selectedDetection = detection;
                                     });
+                                    // Navigate to ResultScreen with the detection ID
+                                    context.goNamed(
+                                      AppRoute.result.name,
+                                      extra: detection.id,
+                                    );
                                   },
                                   child: Container(
                                     decoration: BoxDecoration(

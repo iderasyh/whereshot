@@ -41,3 +41,4 @@ final someFeatureProvider = Provider((ref) {
 ```
 
 Always prefer using the state management system over direct state manipulation to ensure consistency and testability.
+Always use [async_value_widget.dart](mdc:lib/widgets/async_value_widget.dart) instead of [provider].when or [provider].maybeWhen

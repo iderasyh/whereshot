@@ -22,6 +22,8 @@ class MapView extends StatefulWidget {
 
 class _MapViewState extends State<MapView> {
   late GoogleMapController _mapController;
+  bool _mapLoaded = false;
+  String? _mapError;
   
   @override
   Widget build(BuildContext context) {
@@ -36,7 +38,10 @@ class _MapViewState extends State<MapView> {
             ),
             markers: widget.markers,
             onMapCreated: (controller) {
-              _mapController = controller;
+              setState(() {
+                _mapController = controller;
+                _mapLoaded = true;
+              });
             },
             onTap: widget.onTap,
             myLocationEnabled: false,
@@ -44,7 +49,37 @@ class _MapViewState extends State<MapView> {
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
             compassEnabled: true,
+            onCameraIdle: () {
+              if (mounted) {
+                setState(() {
+                  _mapLoaded = true;
+                });
+              }
+            },
           ),
+          
+          if (!_mapLoaded)
+            Container(
+              color: Colors.grey[300],
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            
+          if (_mapError != null)
+            Container(
+              color: Colors.red.withValues(alpha: 0.3),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    'Map error: $_mapError',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+            
           Positioned(
             bottom: 10,
             right: 10,
@@ -54,7 +89,7 @@ class _MapViewState extends State<MapView> {
                 borderRadius: BorderRadius.circular(AppRadius.m),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -65,9 +100,11 @@ class _MapViewState extends State<MapView> {
                   IconButton(
                     icon: const Icon(Icons.zoom_in),
                     onPressed: () {
-                      _mapController.animateCamera(
-                        CameraUpdate.zoomIn(),
-                      );
+                      if (_mapLoaded && _mapError == null) {
+                        _mapController.animateCamera(
+                          CameraUpdate.zoomIn(),
+                        );
+                      }
                     },
                     padding: const EdgeInsets.all(8),
                     constraints: const BoxConstraints(),
@@ -76,9 +113,11 @@ class _MapViewState extends State<MapView> {
                   IconButton(
                     icon: const Icon(Icons.zoom_out),
                     onPressed: () {
-                      _mapController.animateCamera(
-                        CameraUpdate.zoomOut(),
-                      );
+                      if (_mapLoaded && _mapError == null) {
+                        _mapController.animateCamera(
+                          CameraUpdate.zoomOut(),
+                        );
+                      }
                     },
                     padding: const EdgeInsets.all(8),
                     constraints: const BoxConstraints(),
@@ -95,7 +134,9 @@ class _MapViewState extends State<MapView> {
   
   @override
   void dispose() {
-    _mapController.dispose();
+    if (_mapLoaded && _mapError == null) {
+      _mapController.dispose();
+    }
     super.dispose();
   }
 } 

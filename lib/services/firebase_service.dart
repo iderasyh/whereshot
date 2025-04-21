@@ -128,7 +128,9 @@ class FirebaseService {
       return snapshot.docs
           .map((doc) => DetectionResult.fromFirestore(doc))
           .toList();
-    } catch (e) {
+    } catch (e, st) {
+      print('Error getting detection results: $e');
+      print('Stack trace: $st');
       return [];
     }
   }

@@ -30,11 +30,21 @@ class OpenAIService {
       },
       "latitude": {
         "type": "number",
-        "description": "The latitude of the location. Null if unknown.",
+        "description": "The latitude of the location. If unknown, return 0.",
       },
       "longitude": {
         "type": "number",
-        "description": "The longitude of the location. Null if unknown.",
+        "description": "The longitude of the location. If unknown, return 0.",
+      },
+      "confidence": {
+        "type": "number",
+        "description":
+            "A confidence score from 0 (not confident) to 1 (very confident) about the location match.",
+      },
+      "clues": {
+        "type": "string",
+        "description":
+            "Explanation of the clues or reasoning that led to this location.",
       },
     },
     "required": [
@@ -43,6 +53,8 @@ class OpenAIService {
       "locationCountry",
       "latitude",
       "longitude",
+      "confidence",
+      "clues",
     ],
     "additionalProperties": false,
   };
@@ -176,13 +188,16 @@ class OpenAIService {
       // Find the first output item of type 'message'
       final messageOutput = response.output.firstWhere(
         (item) => item.type == 'message',
-        orElse: () => throw Exception('No output item with type \'message\' found.'),
+        orElse:
+            () =>
+                throw Exception('No output item with type \'message\' found.'),
       );
 
       // Check if the found message has content and if it's not empty
       if (messageOutput.content == null || messageOutput.content!.isEmpty) {
-        throw Exception(''
-          'Found \'message\' output item, but its content is null or empty.'
+        throw Exception(
+          ''
+          'Found \'message\' output item, but its content is null or empty.',
         );
       }
 
@@ -195,7 +210,6 @@ class OpenAIService {
 
       // Use the updated LocationInfo factory for parsing
       return LocationInfo.fromJson(jsonResponse, rawJsonString);
-
     } on FormatException catch (e) {
       print('Failed to parse JSON from OpenAI response: $e');
       print('Raw content assumed to be JSON: $rawJsonString');
@@ -203,7 +217,10 @@ class OpenAIService {
     } catch (e) {
       print('Error extracting location info: $e');
       print('Raw content (if extracted): $rawJsonString');
-      return LocationInfo.error('Error processing OpenAI response: ${e.toString()}', rawJsonString);
+      return LocationInfo.error(
+        'Error processing OpenAI response: ${e.toString()}',
+        rawJsonString,
+      );
     }
   }
 

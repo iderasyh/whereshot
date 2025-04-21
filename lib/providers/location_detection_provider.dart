@@ -31,14 +31,14 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
       final userNotifier = ref.read(userNotifierProvider.notifier);
 
       // Check if user has enough credits
-      // final hasCredits = await userNotifier.useCredits(1);
-      // if (!hasCredits) {
-      //   state = AsyncValue.error(
-      //     AppConstants.noCreditsError,
-      //     StackTrace.current,
-      //   );
-      //   return state.hasError;
-      // }
+      final hasCredits = await userNotifier.useCredits(1);
+      if (!hasCredits) {
+        state = AsyncValue.error(
+          AppConstants.noCreditsError,
+          StackTrace.current,
+        );
+        return state.hasError;
+      }
 
       // Generate a unique ID for this detection
       final id = const Uuid().v4();
@@ -65,6 +65,8 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
         locationName: locationInfo.locationName,
         locationCity: locationInfo.locationCity,
         locationCountry: locationInfo.locationCountry,
+        confidence: locationInfo.confidence,
+        clues: locationInfo.clues,
         latitude: locationInfo.latitude,
         longitude: locationInfo.longitude,
         imageUrl: imageUrl,
@@ -164,5 +166,10 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
   // Clear current result
   void clearResult() {
     state = const AsyncValue.data(null);
+  }
+
+  // Set a detection result (used when loading from history)
+  void setDetectionResult(DetectionResult result) {
+    state = AsyncValue.data(result);
   }
 }

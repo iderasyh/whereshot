@@ -132,7 +132,7 @@ class HistoryNotifier extends _$HistoryNotifier {
         final firebaseService = ref.read(firebaseServiceProvider);
         await firebaseService.saveDetectionResult(result);
       }
-    } catch (e, stack) {
+    } catch (e) {
       // Do not update state on error to preserve existing history
       // Just log the error
       print('Error adding result to history: $e');

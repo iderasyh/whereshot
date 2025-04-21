@@ -46,7 +46,9 @@ class AppRouter {
       GoRoute(
         path: AppRoute.result.path,
         name: AppRoute.result.name,
-        builder: (context, state) => const ResultScreen(),
+        builder: (context, state) => ResultScreen(
+          detectionId: state.extra as String?,
+        ),
       ),
       GoRoute(
         path: AppRoute.store.path,

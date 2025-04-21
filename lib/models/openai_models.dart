@@ -14,11 +14,7 @@ class OpenAIRequest {
 
   // Removed temperature and maxTokens, control via model/prompt or potentially other params if needed
 
-  OpenAIRequest({
-    required this.model,
-    required this.input,
-    this.text,
-  });
+  OpenAIRequest({required this.model, required this.input, this.text});
 
   factory OpenAIRequest.fromJson(Map<String, dynamic> json) =>
       _$OpenAIRequestFromJson(json);
@@ -33,20 +29,21 @@ class OpenAIMessage {
   // Content can be a simple string or a list of content blocks (text/image)
   final dynamic content; // String or List<OpenAIMessageContent>
 
-  OpenAIMessage({
-    required this.role,
-    required this.content,
-  });
+  OpenAIMessage({required this.role, required this.content});
 
-   factory OpenAIMessage.fromJson(Map<String, dynamic> json) {
+  factory OpenAIMessage.fromJson(Map<String, dynamic> json) {
     // Handle dynamic content type during deserialization
     var content = json['content'];
     if (content is String) {
       // Keep it as String
     } else if (content is List) {
-      content = content
-          .map((item) => OpenAIMessageContent.fromJson(item as Map<String, dynamic>))
-          .toList();
+      content =
+          content
+              .map(
+                (item) =>
+                    OpenAIMessageContent.fromJson(item as Map<String, dynamic>),
+              )
+              .toList();
     }
     // Override the content field in the map before passing to generated factory
     json['content'] = content;
@@ -56,7 +53,6 @@ class OpenAIMessage {
   Map<String, dynamic> toJson() => _$OpenAIMessageToJson(this);
 }
 
-
 @JsonSerializable(explicitToJson: true, includeIfNull: false)
 class OpenAIMessageContent {
   final String type; // "input_text" or "input_image"
@@ -65,15 +61,12 @@ class OpenAIMessageContent {
   @JsonKey(name: 'image_url')
   final String? imageUrl; // Direct URL string
 
-  OpenAIMessageContent({
-    required this.type,
-    this.text,
-    this.imageUrl,
-  }) : assert(
-            (type == 'input_text' && text != null && imageUrl == null) ||
+  OpenAIMessageContent({required this.type, this.text, this.imageUrl})
+    : assert(
+        (type == 'input_text' && text != null && imageUrl == null) ||
             (type == 'input_image' && imageUrl != null && text == null),
-            'Either text or imageUrl must be provided based on type.');
-
+        'Either text or imageUrl must be provided based on type.',
+      );
 
   factory OpenAIMessageContent.fromJson(Map<String, dynamic> json) =>
       _$OpenAIMessageContentFromJson(json);
@@ -116,7 +109,6 @@ class OpenAIFormat {
 
   Map<String, dynamic> toJson() => _$OpenAIFormatToJson(this);
 }
-
 
 // --- Updated Response Models ---
 
@@ -163,7 +155,7 @@ class OpenAIOutputItem {
     this.content, // Updated constructor
   });
 
-   factory OpenAIOutputItem.fromJson(Map<String, dynamic> json) =>
+  factory OpenAIOutputItem.fromJson(Map<String, dynamic> json) =>
       _$OpenAIOutputItemFromJson(json);
 
   Map<String, dynamic> toJson() => _$OpenAIOutputItemToJson(this);
@@ -182,12 +174,11 @@ class OpenAIOutputContent {
     this.annotations,
   });
 
-   factory OpenAIOutputContent.fromJson(Map<String, dynamic> json) =>
+  factory OpenAIOutputContent.fromJson(Map<String, dynamic> json) =>
       _$OpenAIOutputContentFromJson(json);
 
   Map<String, dynamic> toJson() => _$OpenAIOutputContentToJson(this);
 }
-
 
 @JsonSerializable(explicitToJson: true, includeIfNull: false)
 class OpenAIUsage {
@@ -199,11 +190,7 @@ class OpenAIUsage {
   final int totalTokens;
   // Add usage details if needed
 
-  OpenAIUsage({
-    this.inputTokens,
-    this.outputTokens,
-    required this.totalTokens,
-  });
+  OpenAIUsage({this.inputTokens, this.outputTokens, required this.totalTokens});
 
   factory OpenAIUsage.fromJson(Map<String, dynamic> json) =>
       _$OpenAIUsageFromJson(json);
@@ -217,6 +204,8 @@ class LocationInfo {
   final String locationName;
   final String locationCity;
   final String locationCountry;
+  final double confidence;
+  final String clues;
   final double? latitude;
   final double? longitude;
   final String rawContent; // Keep the original string response
@@ -225,6 +214,8 @@ class LocationInfo {
     required this.locationName,
     required this.locationCity,
     required this.locationCountry,
+    required this.confidence,
+    required this.clues,
     this.latitude,
     this.longitude,
     required this.rawContent,
@@ -235,6 +226,11 @@ class LocationInfo {
       locationName: json['locationName'] as String? ?? 'Unknown location',
       locationCity: json['locationCity'] as String? ?? 'Unknown city',
       locationCountry: json['locationCountry'] as String? ?? 'Unknown country',
+      confidence:
+          json['confidence'] is double
+              ? json['confidence'] as double
+              : double.parse(json['confidence'].toString()),
+      clues: json['clues'] as String,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       rawContent: rawContent,
@@ -246,9 +242,11 @@ class LocationInfo {
       locationName: message,
       locationCity: 'Error',
       locationCountry: 'Error',
+      confidence: 0,
+      clues: 'Error',
       latitude: null,
       longitude: null,
       rawContent: rawContent,
     );
   }
-} 
+}
