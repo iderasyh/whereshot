@@ -413,14 +413,14 @@ class _AnimatedUploadButton extends StatelessWidget {
                               ),
                               const SizedBox(height: AppSpacing.s),
                               Text(
-                                'Share a moment',
+                                'Share a photo',
                                 style: TextStyle(
                                   color: AppColors.darkGrey,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               Text(
-                                'Discover its place',
+                                'Discover exact location',
                                 style: TextStyle(
                                   color: AppColors.textGrey,
                                   fontSize: 12,

@@ -25,7 +25,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     super.initState();
     // Refresh history when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.refresh(historyNotifierProvider);
+      ref.invalidate(historyNotifierProvider);
     });
   }
   
@@ -126,7 +126,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                                 onPressed: () async {
                                   await ref.read(locationDetectionNotifierProvider.notifier)
                                     .saveCurrentResult();
-                                  ref.refresh(historyNotifierProvider);
+                                  ref.invalidate(historyNotifierProvider);
                                 },
                                 icon: const Icon(Icons.save),
                                 label: const Text('Save'),

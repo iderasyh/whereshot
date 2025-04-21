@@ -7,7 +7,7 @@ part of 'location_detection_provider.dart';
 // **************************************************************************
 
 String _$locationDetectionNotifierHash() =>
-    r'82dc9e83503e375eac26efc9267e793fe325a72f';
+    r'2b7ceda511750fec3ae4f4f0e4552c1908f44514';
 
 /// See also [LocationDetectionNotifier].
 @ProviderFor(LocationDetectionNotifier)

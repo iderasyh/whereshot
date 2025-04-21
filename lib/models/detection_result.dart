@@ -7,6 +7,8 @@ part 'detection_result.g.dart';
 class DetectionResult {
   final String id;
   final String locationName;
+  final String locationCity;
+  final String locationCountry;
   final double? latitude;
   final double? longitude;
   final String? imageUrl;
@@ -18,6 +20,8 @@ class DetectionResult {
   DetectionResult({
     required this.id,
     required this.locationName,
+    required this.locationCity,
+    required this.locationCountry,
     this.latitude,
     this.longitude,
     this.imageUrl,
@@ -38,6 +42,8 @@ class DetectionResult {
     return DetectionResult(
       id: doc.id,
       locationName: data['locationName'] as String,
+      locationCity: data['locationCity'] as String,
+      locationCountry: data['locationCountry'] as String,
       latitude: data['latitude'] as double?,
       longitude: data['longitude'] as double?,
       imageUrl: data['imageUrl'] as String?,
@@ -52,6 +58,8 @@ class DetectionResult {
   Map<String, dynamic> toFirestore() {
     return {
       'locationName': locationName,
+      'locationCity': locationCity,
+      'locationCountry': locationCountry,
       'latitude': latitude,
       'longitude': longitude,
       'imageUrl': imageUrl,
@@ -69,6 +77,8 @@ class DetectionResult {
   DetectionResult copyWith({
     String? id,
     String? locationName,
+    String? locationCity,
+    String? locationCountry,
     double? latitude,
     double? longitude,
     String? imageUrl,
@@ -80,6 +90,8 @@ class DetectionResult {
     return DetectionResult(
       id: id ?? this.id,
       locationName: locationName ?? this.locationName,
+      locationCity: locationCity ?? this.locationCity,
+      locationCountry: locationCountry ?? this.locationCountry,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       imageUrl: imageUrl ?? this.imageUrl,

@@ -20,7 +20,7 @@ class AppConstants {
   
   // API endpoints
   static const String openAIBaseUrl = 'https://api.openai.com/v1';
-  static const String openAIVisionEndpoint = '$openAIBaseUrl/chat/completions';
+  static const String openAIResponsesEndpoint = '$openAIBaseUrl/responses';
   
   // OpenAI model
   static const String openAIModelId = 'o3-2025-04-16';
@@ -47,9 +47,6 @@ class AppConstants {
   static const double maxImageWidth = 1024.0;
   static const double maxImageHeight = 1024.0;
   static const double imageQuality = 80.0;
-  
-  // Request settings
-  static const int requestTimeout = 30000; // 30 seconds
   
   // Error messages
   static const String noCreditsError = 'No credits available. Please purchase credits to continue.';

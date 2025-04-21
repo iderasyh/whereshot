@@ -10,6 +10,8 @@ DetectionResult _$DetectionResultFromJson(Map<String, dynamic> json) =>
     DetectionResult(
       id: json['id'] as String,
       locationName: json['locationName'] as String,
+      locationCity: json['locationCity'] as String,
+      locationCountry: json['locationCountry'] as String,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       imageUrl: json['imageUrl'] as String?,
@@ -23,6 +25,8 @@ Map<String, dynamic> _$DetectionResultToJson(DetectionResult instance) =>
     <String, dynamic>{
       'id': instance.id,
       'locationName': instance.locationName,
+      'locationCity': instance.locationCity,
+      'locationCountry': instance.locationCountry,
       'latitude': instance.latitude,
       'longitude': instance.longitude,
       'imageUrl': instance.imageUrl,

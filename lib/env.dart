@@ -9,4 +9,7 @@ final class Env {
 
   @EnviedField(varName: 'GOOGLE_IOS_API_KEY', obfuscate: true)
   static final String googleIosApiKey = _Env.googleIosApiKey;
+
+  @EnviedField(varName: 'OPENAI_API_KEY', obfuscate: true)
+  static final String openAIApiKey = _Env.openAIApiKey;
 }
