@@ -14,8 +14,8 @@ import '../router/app_router.dart';
 import '../theme/app_theme.dart';
 import '../widgets/async_value_widget.dart';
 import '../models/user.dart';
-import '../utils/async_value_ui.dart';
 import '../models/detection_result.dart';
+import '../widgets/processing_animation_overlay.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -28,6 +28,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     with TickerProviderStateMixin {
   bool _saveImage = true;
   bool _isProcessing = false;
+  File? _currentlyProcessingImageFile;
   bool _isPickingPhoto = false;
   late final AnimationController _pulseController;
   late final AnimationController _rotateController;
@@ -158,25 +159,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Future<void> _processImage(File imageFile) async {
+    _currentlyProcessingImageFile = imageFile;
     setState(() {
       _isProcessing = true;
     });
+
+    bool navigateToResult = false;
 
     try {
       final hasError = await ref
           .read(locationDetectionNotifierProvider.notifier)
           .detectLocationFromFile(imageFile, saveImage: _saveImage);
 
-      print('hasError: $hasError');
-
-      if (!hasError && mounted) {
-        context.goNamed(AppRoute.result.name);
+      if (!hasError) {
+        navigateToResult = true;
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('Error processing image: ${e.toString()}'),
             backgroundColor: AppColors.errorRed,
           ),
         );
@@ -185,7 +187,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       if (mounted) {
         setState(() {
           _isProcessing = false;
+          _currentlyProcessingImageFile = null;
         });
+        if (navigateToResult) {
+          context.goNamed(AppRoute.result.name);
+        }
       }
     }
   }
@@ -195,7 +201,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     ref.listen<AsyncValue<DetectionResult?>>(
       locationDetectionNotifierProvider,
       (_, next) {
-        next.showAlertDialogOnError(context);
+        if (next is AsyncError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(next.error.toString()),
+              backgroundColor: AppColors.errorRed,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       },
     );
 
@@ -204,39 +218,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     return Scaffold(
       backgroundColor: AppColors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.m),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _HomeAppBar(userAsync: userAsync),
-              const SizedBox(height: AppSpacing.l),
-
-              Expanded(
-                child: _AnimatedUploadButton(
-                  isPickingPhoto: _isPickingPhoto,
-                  isProcessing: _isProcessing,
-                  onTap: _pickPhoto,
-                  rotateController: _rotateController,
-                  pulseAnimation: _pulseAnimation,
-                  rotateAnimation: _rotateAnimation,
-                  size: size,
-                ),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.m),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _HomeAppBar(userAsync: userAsync),
+                  const SizedBox(height: AppSpacing.l),
+                  Expanded(
+                    child: _AnimatedUploadButton(
+                      isPickingPhoto: _isPickingPhoto,
+                      isProcessing: _isProcessing,
+                      onTap: _pickPhoto,
+                      rotateController: _rotateController,
+                      pulseAnimation: _pulseAnimation,
+                      rotateAnimation: _rotateAnimation,
+                      size: size,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  _HomeBottomControls(
+                    saveImage: _saveImage,
+                    onSaveImageChanged: (value) {
+                      setState(() {
+                        _saveImage = value;
+                      });
+                      ref
+                          .read(userNotifierProvider.notifier)
+                          .toggleDefaultSaveMode();
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.l),
-
-              _HomeBottomControls(
-                saveImage: _saveImage,
-                onSaveImageChanged: (value) {
-                  setState(() {
-                    _saveImage = value;
-                  });
-                },
-              ),
-            ],
+            ),
           ),
-        ),
+          if (_isProcessing && _currentlyProcessingImageFile != null)
+            Positioned.fill(
+              child: ProcessingAnimationOverlay(
+                imageFile: _currentlyProcessingImageFile!,
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -305,10 +330,13 @@ class _HomeAppBar extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.star_rounded,
-                    color: AppColors.accent,
-                    size: 18,
+                  InkWell(
+                    onTap: () => context.goNamed(AppRoute.store.name),
+                    child: const Icon(
+                      Icons.star_rounded,
+                      color: AppColors.accent,
+                      size: 18,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
@@ -368,14 +396,16 @@ class _AnimatedUploadButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showFullButton = !isProcessing;
+
     return Center(
       child: GestureDetector(
         onTap: isPickingPhoto || isProcessing ? null : onTap,
         child: AnimatedBuilder(
-          animation: rotateController,
+          animation: Listenable.merge([rotateController, pulseAnimation]),
           builder: (context, child) {
             return Transform.scale(
-              scale: pulseAnimation.value,
+              scale: showFullButton ? pulseAnimation.value : 1.0,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -397,55 +427,56 @@ class _AnimatedUploadButton extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Container(
-                    width: size.width * 0.45,
-                    height: size.width * 0.45,
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.darkGrey.withValues(alpha: 0.1),
-                          blurRadius: 10,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child:
-                        isPickingPhoto || isProcessing
-                            ? Center(
-                              child: AppTheme.adaptiveWidget(
-                                context: context,
-                                material: const CircularProgressIndicator(),
-                                cupertino: const CupertinoActivityIndicator(),
+                  if (showFullButton)
+                    Container(
+                      width: size.width * 0.45,
+                      height: size.width * 0.45,
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.darkGrey.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child:
+                          isPickingPhoto
+                              ? Center(
+                                child: AppTheme.adaptiveWidget(
+                                  context: context,
+                                  material: const CircularProgressIndicator(),
+                                  cupertino: const CupertinoActivityIndicator(),
+                                ),
+                              )
+                              : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.upload_rounded,
+                                    size: 48,
+                                    color: AppColors.accent,
+                                  ),
+                                  const SizedBox(height: AppSpacing.s),
+                                  Text(
+                                    'Choose a photo',
+                                    style: TextStyle(
+                                      color: AppColors.darkGrey,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Discover exact location',
+                                    style: TextStyle(
+                                      color: AppColors.textGrey,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            )
-                            : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.upload_rounded,
-                                  size: 48,
-                                  color: AppColors.accent,
-                                ),
-                                const SizedBox(height: AppSpacing.s),
-                                Text(
-                                  'Share a photo',
-                                  style: TextStyle(
-                                    color: AppColors.darkGrey,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  'Discover exact location',
-                                  style: TextStyle(
-                                    color: AppColors.textGrey,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                  ),
+                    ),
                 ],
               ),
             );
@@ -483,7 +514,7 @@ class _HomeBottomControls extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  saveImage ? 'Keep memories' : 'Temporary exploration',
+                  saveImage ? 'Save result' : 'Quick check',
                   style: const TextStyle(
                     color: AppColors.darkGrey,
                     fontWeight: FontWeight.w500,
@@ -510,36 +541,9 @@ class _HomeBottomControls extends StatelessWidget {
         TextButton(
           onPressed: () => context.goNamed(AppRoute.store.name),
           style: TextButton.styleFrom(foregroundColor: AppColors.textGrey),
-          child: const Text('Need inspiration? Get more credits'),
+          child: const Text('Need More Location Finds? Get Credits'),
         ),
       ],
     );
   }
-}
-
-class PatternPainter extends CustomPainter {
-  final Color color;
-
-  PatternPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint =
-        Paint()
-          ..color = color
-          ..strokeWidth = 1.0
-          ..style = PaintingStyle.stroke;
-
-    final double spacing = 40.0;
-    final double dotSize = 2.0;
-
-    for (double x = 0; x < size.width; x += spacing) {
-      for (double y = 0; y < size.height; y += spacing) {
-        canvas.drawCircle(Offset(x, y), dotSize, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

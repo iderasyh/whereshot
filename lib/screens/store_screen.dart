@@ -15,6 +15,7 @@ import '../theme/app_theme.dart';
 import '../widgets/async_value_widget.dart';
 import '../widgets/credit_pack_card.dart';
 import '../widgets/custom_app_bar.dart';
+import '../widgets/loading_overlay.dart';
 
 class StoreScreen extends ConsumerStatefulWidget {
   const StoreScreen({super.key});
@@ -137,7 +138,10 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         actions: [
           TextButton.icon(
             icon: _isRestoring
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.restore, size: 20),
             label: const Text('Restore'),
             onPressed: _isRestoring || _isPurchasing ? null : _restorePurchases,
@@ -148,14 +152,25 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
           ),
         ],
       ),
-      body: SafeArea(
-        bottom: false,
-        child: AsyncValueWidget<Offerings>(
-          value: offeringsAsync,
-          loading: _buildLoadingState(),
-          error: (error, stackTrace) => _buildErrorState(context, error),
-          data: (offerings) => _buildStoreContent(context, offerings),
-        ),
+      body: Stack(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: AsyncValueWidget<Offerings>(
+              value: offeringsAsync,
+              loading: _buildLoadingState(),
+              error: (error, stackTrace) => _buildErrorState(context, error),
+              data: (offerings) => _buildStoreContent(context, offerings),
+            ),
+          ),
+
+          if (_isPurchasing || _isRestoring)
+            Positioned.fill(
+              child: LoadingOverlay(
+                message: _isPurchasing ? 'Processing Purchase...' : 'Restoring...',
+              ),
+            ),
+        ],
       ),
     );
   }
