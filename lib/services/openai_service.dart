@@ -36,11 +36,6 @@ class OpenAIService {
         "type": "number",
         "description": "The longitude of the location. If unknown, return 0.",
       },
-      "confidence": {
-        "type": "number",
-        "description":
-            "A confidence score from 0 (not confident) to 1 (very confident) about how sure you are that the location is correct.",
-      },
       "clues": {
         "type": "string",
         "description":
@@ -53,7 +48,6 @@ class OpenAIService {
       "locationCountry",
       "latitude",
       "longitude",
-      "confidence",
       "clues",
     ],
     "additionalProperties": false,

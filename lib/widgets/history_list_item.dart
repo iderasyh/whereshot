@@ -77,14 +77,8 @@ class HistoryListItem extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      '${detection.locationCity}, ${detection.locationCountry}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textGrey,
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    // Conditionally display city/country
+                    _buildLocationSubtitle(context, detection),
                     const SizedBox(height: AppSpacing.s),
                     Text(
                       timeAgoString,
@@ -107,6 +101,42 @@ class HistoryListItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Helper function to build the location subtitle conditionally
+  Widget _buildLocationSubtitle(
+    BuildContext context,
+    DetectionResult detection,
+  ) {
+    final city = detection.locationCity;
+    final country = detection.locationCountry;
+    final bool cityUnknown = city.toLowerCase() == 'unknown';
+    final bool countryUnknown = country.toLowerCase() == 'unknown';
+
+    String displayText = '';
+
+    if (!cityUnknown && !countryUnknown) {
+      displayText = '$city, $country';
+    } else if (!cityUnknown && countryUnknown) {
+      displayText = city;
+    } else if (cityUnknown && !countryUnknown) {
+      displayText = country;
+    } // If both are unknown, displayText remains empty
+
+    // Only render the Text widget if there's something to display
+    if (displayText.isNotEmpty) {
+      return Text(
+        displayText,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.textGrey,
+            ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    } else {
+      // Return an empty container if nothing should be displayed
+      return const SizedBox.shrink();
+    }
   }
 
   Widget _buildThumbnail(BuildContext context) {

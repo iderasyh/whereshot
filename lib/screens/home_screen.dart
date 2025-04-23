@@ -8,14 +8,16 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../constants/app_constants.dart';
-import '../providers/user_provider.dart';
 import '../providers/location_detection_provider.dart';
+import '../providers/ui_providers.dart';
+import '../providers/user_provider.dart';
 import '../router/app_router.dart';
 import '../theme/app_theme.dart';
 import '../widgets/async_value_widget.dart';
 import '../models/user.dart';
 import '../models/detection_result.dart';
 import '../widgets/processing_animation_overlay.dart';
+import '../widgets/welcome_dialog.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -79,6 +81,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         });
       }
     });
+  }
+
+  void _checkAndShowWelcomeMessage(bool showWelcomeMessage) {
+    if (showWelcomeMessage == true) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (context) => const WelcomeDialog(),
+        );
+      }
+      ref.read(showWelcomeMessageProvider.notifier).consumed();
+    }
   }
 
   Future<void> _pickPhoto() async {
@@ -198,17 +213,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<bool>(showWelcomeMessageProvider, (_, next) {
+      _checkAndShowWelcomeMessage(next);
+    });
+
     ref.listen<AsyncValue<DetectionResult?>>(
       locationDetectionNotifierProvider,
       (_, next) {
         if (next is AsyncError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(next.error.toString()),
-              backgroundColor: AppColors.errorRed,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(next.error.toString()),
+                backgroundColor: AppColors.errorRed,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         }
       },
     );
@@ -327,26 +348,26 @@ class _HomeAppBar extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  InkWell(
-                    onTap: () => context.goNamed(AppRoute.store.name),
-                    child: const Icon(
+              child: InkWell(
+                onTap: () => context.goNamed(AppRoute.store.name),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
                       Icons.star_rounded,
                       color: AppColors.accent,
                       size: 18,
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    '$credits',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      '$credits',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },

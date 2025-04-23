@@ -15,6 +15,7 @@ dependencies:
   # UI
   cupertino_icons: ^1.0.8
   shimmer: 3.0.0
+  url_launcher: ^6.3.1
 
   # State management
   riverpod: 2.6.1
@@ -62,9 +63,19 @@ dependencies:
   timeago: 3.2.2
   firebase_auth: ^5.5.2
 
+  # Splash Screen
+  flutter_native_splash: 2.4.6
+
+  # Internationalization
+  intl: ^0.19.0
+  confetti: ^0.8.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  # Icons & Splash
+  flutter_launcher_icons: 0.14.3
 
   flutter_lints: ^5.0.0
   riverpod_generator: 2.6.4
@@ -87,3 +98,20 @@ flutter:
           weight: 600
         - asset: assets/fonts/Inter-Bold.otf
           weight: 700
+
+# Add flutter_launcher_icons configuration
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo.png"
+  min_sdk_android: 21 # Optional: Adjust based on your minimum SDK
+  remove_alpha_ios: true
+
+# Add flutter_native_splash configuration
+flutter_native_splash:
+  color: "#FFFFFF" # Changed to white
+  image: assets/images/logo-transparent.png
+  android_12:
+    color: "#FFFFFF" # Changed to white
+    image: assets/images/logo-transparent.png
+  web: false # Assuming no web support needed

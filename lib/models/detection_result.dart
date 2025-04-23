@@ -9,7 +9,6 @@ class DetectionResult {
   final String locationName;
   final String locationCity;
   final String locationCountry;
-  final double confidence;
   final String clues;
   final double? latitude;
   final double? longitude;
@@ -24,7 +23,6 @@ class DetectionResult {
     required this.locationName,
     required this.locationCity,
     required this.locationCountry,
-    required this.confidence,
     required this.clues,
     this.latitude,
     this.longitude,
@@ -48,9 +46,6 @@ class DetectionResult {
       locationName: data['locationName'] as String,
       locationCity: data['locationCity'] as String,
       locationCountry: data['locationCountry'] as String,
-      confidence: data['confidence'] is double
-          ? data['confidence'] as double
-          : double.parse(data['confidence'].toString()),
       clues: data['clues'] as String,
       latitude: data['latitude'] as double?,
       longitude: data['longitude'] as double?,
@@ -68,7 +63,6 @@ class DetectionResult {
       'locationName': locationName,
       'locationCity': locationCity,
       'locationCountry': locationCountry,
-      'confidence': confidence,
       'clues': clues,
       'latitude': latitude,
       'longitude': longitude,
@@ -89,7 +83,6 @@ class DetectionResult {
     String? locationName,
     String? locationCity,
     String? locationCountry,
-    double? confidence,
     String? clues,
     double? latitude,
     double? longitude,
@@ -104,7 +97,6 @@ class DetectionResult {
       locationName: locationName ?? this.locationName,
       locationCity: locationCity ?? this.locationCity,
       locationCountry: locationCountry ?? this.locationCountry,
-      confidence: confidence ?? this.confidence,
       clues: clues ?? this.clues,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,

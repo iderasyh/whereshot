@@ -20,10 +20,12 @@ class Purchase extends _$Purchase {
     try {
       final offerings = await Purchases.getOfferings();
       return offerings;
-    } on PlatformException catch (_) {
+    } on PlatformException catch (e) {
+      print('Error fetching offerings: $e');
       // Handle specific RevenueCat errors
       throw Exception(AppConstants.failedLoadingPackages);
     } catch (e) {
+      print('Error fetching offerings: $e');
       throw Exception(AppConstants.failedLoadingPackages);
     }
   }

@@ -70,6 +70,8 @@ class AppConstants {
   static const String locationNotFoundRefund =
       'Unfortunately, we couldn\'t find the location for this photo. Your credit has been refunded.';
   static const String creditRefundSuffix = ' (Your credit has been refunded).';
+  static const String couldNotOpenMaps =
+      'Could not open maps. Please try again.';
 
   // Success messages
   static const String purchaseSuccess = 'Purchase completed successfully!';

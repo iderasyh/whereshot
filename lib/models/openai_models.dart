@@ -204,7 +204,6 @@ class LocationInfo {
   final String locationName;
   final String locationCity;
   final String locationCountry;
-  final double confidence;
   final String clues;
   final double? latitude;
   final double? longitude;
@@ -214,7 +213,6 @@ class LocationInfo {
     required this.locationName,
     required this.locationCity,
     required this.locationCountry,
-    required this.confidence,
     required this.clues,
     this.latitude,
     this.longitude,
@@ -226,10 +224,6 @@ class LocationInfo {
       locationName: json['locationName'] as String? ?? 'Unknown location',
       locationCity: json['locationCity'] as String? ?? 'Unknown city',
       locationCountry: json['locationCountry'] as String? ?? 'Unknown country',
-      confidence:
-          json['confidence'] is double
-              ? json['confidence'] as double
-              : double.parse(json['confidence'].toString()),
       clues: json['clues'] as String,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
@@ -242,7 +236,6 @@ class LocationInfo {
       locationName: message,
       locationCity: 'Error',
       locationCountry: 'Error',
-      confidence: 0,
       clues: 'Error',
       latitude: null,
       longitude: null,

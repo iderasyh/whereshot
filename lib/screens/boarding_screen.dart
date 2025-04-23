@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:whereshot/providers/service_providers.dart';
+import 'package:whereshot/providers/ui_providers.dart';
 import 'package:whereshot/theme/app_theme.dart';
 import 'package:whereshot/widgets/animated_gradient_border.dart';
 
@@ -64,12 +64,12 @@ class _BoardingScreenState extends ConsumerState<BoardingScreen>
     });
 
     try {
-      await ref.read(authServiceProvider).signInAnonymously();
+      await ref.read(showWelcomeMessageProvider.notifier).signInAnonymously();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppConstants.anErrorOccurred),
+            content: Text('${AppConstants.anErrorOccurred}: $e'),
             backgroundColor: AppColors.errorRed,
             behavior: SnackBarBehavior.floating,
           ),

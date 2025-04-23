@@ -83,7 +83,6 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
           locationName: locationInfo.locationName,
           locationCity: locationInfo.locationCity,
           locationCountry: locationInfo.locationCountry,
-          confidence: locationInfo.confidence,
           clues: locationInfo.clues,
           latitude: locationInfo.latitude,
           longitude: locationInfo.longitude,

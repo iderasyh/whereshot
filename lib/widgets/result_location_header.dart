@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import 'package:flutter/services.dart'; // Import for Clipboard
-import 'package:whereshot/models/detection_result.dart';
-import 'package:whereshot/theme/app_theme.dart';
+import 'package:intl/intl.dart'; // Import for date formatting
+import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
+
+import '../models/detection_result.dart';
+import '../theme/app_theme.dart';
+import '../constants/app_constants.dart';
+import '../router/app_router.dart';
 
 class ResultLocationHeader extends StatelessWidget {
   final DetectionResult detection;
@@ -33,17 +37,21 @@ class ResultLocationHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Confidence indicator
+                // Timestamp display
                 Row(
                   children: [
-                    _buildConfidenceIndicator(detection.confidence),
+                    Icon(
+                      Icons.access_time_rounded,
+                      size: 16,
+                      color: AppColors.textGrey,
+                    ),
                     const SizedBox(width: AppSpacing.s),
                     Text(
-                      '${(detection.confidence * 100).toInt()}% confidence',
+                      // Format the timestamp
+                      DateFormat('MMM d, yyyy').format(detection.timestamp),
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: _getConfidenceColor(detection.confidence),
-                            fontWeight: FontWeight.bold,
-                          ),
+                        color: AppColors.textGrey,
+                      ),
                     ),
                     const Spacer(),
                     if (detection.hasCoordinates)
@@ -51,7 +59,7 @@ class ResultLocationHeader extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.m),
-                
+
                 // Location name
                 Row(
                   children: [
@@ -74,20 +82,13 @@ class ResultLocationHeader extends StatelessWidget {
                         children: [
                           Text(
                             detection.locationName,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium
+                            style: Theme.of(context).textTheme.headlineMedium
                                 ?.copyWith(fontWeight: FontWeight.bold),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          Text(
-                            '${detection.locationCity}, ${detection.locationCountry}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(color: AppColors.textGrey),
-                          ),
+                          // Conditionally display city/country
+                          _buildLocationSubtitle(context, detection),
                         ],
                       ),
                     ),
@@ -101,47 +102,51 @@ class ResultLocationHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildConfidenceIndicator(double confidence) {
-    final color = _getConfidenceColor(confidence);
-    final segments = 5;
-    final filledSegments = (confidence * segments).round();
+  // Helper function to build the location subtitle conditionally
+  Widget _buildLocationSubtitle(
+    BuildContext context,
+    DetectionResult detection,
+  ) {
+    final city = detection.locationCity;
+    final country = detection.locationCountry;
+    final bool cityUnknown = city.toLowerCase() == 'unknown';
+    final bool countryUnknown = country.toLowerCase() == 'unknown';
 
-    return Row(
-      children: List.generate(
-        segments,
-        (index) => Container(
-          margin: const EdgeInsets.only(right: 2),
-          width: 8,
-          height: 16,
-          decoration: BoxDecoration(
-            color: index < filledSegments ? color : AppColors.lightGrey,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-      ),
-    );
-  }
+    String displayText = '';
 
-  Color _getConfidenceColor(double confidence) {
-    if (confidence >= 0.8) return AppColors.successGreen;
-    if (confidence >= 0.5) return const Color(0xFFFFA000); // Amber
-    return AppColors.accentAlt; // Lower confidence
+    if (!cityUnknown && !countryUnknown) {
+      displayText = '$city, $country';
+    } else if (!cityUnknown && countryUnknown) {
+      displayText = city;
+    } else if (cityUnknown && !countryUnknown) {
+      displayText = country;
+    } // If both are unknown, displayText remains empty
+
+    // Only render the Text widget if there's something to display
+    if (displayText.isNotEmpty) {
+      return Text(
+        displayText,
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(color: AppColors.textGrey),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    } else {
+      // Return an empty container if nothing should be displayed
+      return const SizedBox.shrink();
+    }
   }
 
   Widget _buildCoordinateChip(BuildContext context, DetectionResult detection) {
+    // Ensure coordinates are available
+    if (detection.latitude == null || detection.longitude == null) {
+      return const SizedBox.shrink(); // Don't show chip if no coordinates
+    }
+
     return GestureDetector(
-      onTap: () {
-        final coordText =
-            '${detection.latitude!.toStringAsFixed(6)}, ${detection.longitude!.toStringAsFixed(6)}';
-        // Actually copy to clipboard
-        Clipboard.setData(ClipboardData(text: coordText)); 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Coordinates copied: $coordText'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      },
+      onTap:
+          () => _launchMaps(context, detection.latitude!, detection.longitude!),
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.m,
@@ -158,14 +163,47 @@ class ResultLocationHeader extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               'GPS',
-              style: Theme.of(context)
-                  .textTheme
-                  .labelMedium
-                  ?.copyWith(color: AppColors.accent, fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: AppColors.accent,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
       ),
     );
   }
-} 
+
+  /// Function to launch Google Maps
+  Future<void> _launchMaps(
+    BuildContext context,
+    double latitude,
+    double longitude,
+  ) async {
+    final Uri googleMapsUrl = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+    );
+
+    try {
+      if (await canLaunchUrl(googleMapsUrl)) {
+        await launchUrl(googleMapsUrl);
+      } else {
+        // Handle the error if the URL can't be launched
+        ScaffoldMessenger.of(rootNavigatorKey.currentContext!).showSnackBar(
+          const SnackBar(
+            content: Text(AppConstants.couldNotOpenMaps),
+            backgroundColor: AppColors.errorRed,
+          ),
+        );
+      }
+    } catch (e) {
+      // Catch any other exceptions during launch
+      ScaffoldMessenger.of(rootNavigatorKey.currentContext!).showSnackBar(
+        SnackBar(
+          content: Text(AppConstants.couldNotOpenMaps),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+    }
+  }
+}
