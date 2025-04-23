@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 import 'package:whereshot/constants/app_constants.dart';
 import 'package:whereshot/models/detection_result.dart';
 
@@ -8,18 +7,7 @@ class StorageService {
   final SharedPreferences _prefs;
   
   StorageService(this._prefs);
-  
-  // Get device ID (create if not exists)
-  Future<String> getDeviceId() async {
-    String? deviceId = _prefs.getString(AppConstants.deviceIdKey);
-    
-    if (deviceId == null) {
-      deviceId = const Uuid().v4();
-      await _prefs.setString(AppConstants.deviceIdKey, deviceId);
-    }
-    
-    return deviceId;
-  }
+
   
   // Get user credits
   int getCredits() {

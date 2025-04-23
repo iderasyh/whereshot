@@ -15,4 +15,7 @@ final class Env {
 
   @EnviedField(varName: 'GOOGLE_MAPS_API_KEY', obfuscate: true)
   static final String googleMapsApiKey = _Env.googleMapsApiKey;
+
+  @EnviedField(varName: 'REVENUECAT_IOS_KEY', obfuscate: true)
+  static final String revenueCatIosKey = _Env.revenueCatIosKey;
 }

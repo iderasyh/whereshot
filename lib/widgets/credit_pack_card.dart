@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:whereshot/models/credit_pack.dart';
-import 'package:whereshot/providers/purchase_provider.dart';
 import 'package:whereshot/theme/app_theme.dart';
 
 class CreditPackCard extends ConsumerStatefulWidget {
@@ -52,14 +51,7 @@ class _CreditPackCardState extends ConsumerState<CreditPackCard>
 
   @override
   Widget build(BuildContext context) {
-    final savingsPercent = widget.pack.savingsPercentage.round();
-    final futurePrice = ref.watch(
-      FutureProvider(
-        (ref) => ref
-            .read(purchaseNotifierProvider.notifier)
-            .getPriceString(widget.pack),
-      ),
-    );
+    final savingsPercent = widget.pack.savingsPercentage?.round() ?? 0;
 
     final bool isPopular = widget.pack.description == 'Popular Choice';
     final bool isBestValue = widget.pack.description == 'Best Value';
@@ -205,37 +197,14 @@ class _CreditPackCardState extends ConsumerState<CreditPackCard>
                                       ),
                                     ),
                                     const SizedBox(height: AppSpacing.xs / 2),
-                                    futurePrice.when(
-                                      data:
-                                          (priceString) => Text(
-                                            priceString ??
-                                                '\$${widget.pack.price.toStringAsFixed(2)}',
+                                    Text(
+                                      widget.pack.priceString,
                                             style: TextStyle(
                                               color: Colors.white.withValues(
                                                 alpha: 0.9,
                                               ),
                                               fontWeight: FontWeight.bold,
                                               fontSize: 18,
-                                            ),
-                                          ),
-                                      loading:
-                                          () => Container(
-                                            height: 18,
-                                            width: 60,
-                                            color: Colors.white.withValues(
-                                              alpha: 0.3,
-                                            ),
-                                          ),
-                                      error:
-                                          (_, __) => Text(
-                                            '\$${widget.pack.price.toStringAsFixed(2)}',
-                                            style: TextStyle(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.9,
-                                              ),
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 18,
-                                            ),
                                           ),
                                     ),
                                   ],
@@ -255,7 +224,9 @@ class _CreditPackCardState extends ConsumerState<CreditPackCard>
                                     ),
                                     const SizedBox(height: AppSpacing.xs / 2),
                                     Text(
-                                      '\$${widget.pack.pricePerCredit.toStringAsFixed(2)}',
+                                      widget.pack.pricePerCredit != null
+                                          ? '\$${widget.pack.pricePerCredit!.toStringAsFixed(2)}'
+                                          : '-',
                                       style: TextStyle(
                                         color: Colors.white.withValues(
                                           alpha: 0.9,

@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class User {
-  final String deviceId;
+  final String uid;
   final int credits;
   final bool defaultSaveMode;
   final DateTime lastUpdated;
 
   User({
-    required this.deviceId,
+    required this.uid,
     required this.credits,
     required this.defaultSaveMode,
     required this.lastUpdated,
@@ -17,7 +17,7 @@ class User {
   factory User.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return User(
-      deviceId: doc.id,
+      uid: doc.id,
       credits: data['credits'] as int,
       defaultSaveMode: data['defaultSaveMode'] as bool,
       lastUpdated: (data['lastUpdated'] as Timestamp).toDate(),
@@ -35,13 +35,13 @@ class User {
 
   // Create copy with updated fields
   User copyWith({
-    String? deviceId,
+    String? uid,
     int? credits,
     bool? defaultSaveMode,
     DateTime? lastUpdated,
   }) {
     return User(
-      deviceId: deviceId ?? this.deviceId,
+      uid: uid ?? this.uid,
       credits: credits ?? this.credits,
       defaultSaveMode: defaultSaveMode ?? this.defaultSaveMode,
       lastUpdated: lastUpdated ?? this.lastUpdated,

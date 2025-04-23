@@ -15,7 +15,7 @@ class DetectionResult {
   final double? longitude;
   final String? imageUrl;
   final String? originalPrompt;
-  final String deviceId;
+  final String uid;
   final DateTime timestamp;
   final bool saved;
 
@@ -30,7 +30,7 @@ class DetectionResult {
     this.longitude,
     this.imageUrl,
     this.originalPrompt,
-    required this.deviceId,
+    required this.uid,
     required this.timestamp,
     required this.saved,
   });
@@ -56,7 +56,7 @@ class DetectionResult {
       longitude: data['longitude'] as double?,
       imageUrl: data['imageUrl'] as String?,
       originalPrompt: data['originalPrompt'] as String?,
-      deviceId: data['deviceId'] as String,
+      uid: data['uid'] as String,
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       saved: data['saved'] as bool,
     );
@@ -74,7 +74,7 @@ class DetectionResult {
       'longitude': longitude,
       'imageUrl': imageUrl,
       'originalPrompt': originalPrompt,
-      'deviceId': deviceId,
+      'uid': uid,
       'timestamp': Timestamp.fromDate(timestamp),
       'saved': saved,
     };
@@ -95,7 +95,7 @@ class DetectionResult {
     double? longitude,
     String? imageUrl,
     String? originalPrompt,
-    String? deviceId,
+    String? uid,
     DateTime? timestamp,
     bool? saved,
   }) {
@@ -110,7 +110,7 @@ class DetectionResult {
       longitude: longitude ?? this.longitude,
       imageUrl: imageUrl ?? this.imageUrl,
       originalPrompt: originalPrompt ?? this.originalPrompt,
-      deviceId: deviceId ?? this.deviceId,
+      uid: uid ?? this.uid,
       timestamp: timestamp ?? this.timestamp,
       saved: saved ?? this.saved,
     );

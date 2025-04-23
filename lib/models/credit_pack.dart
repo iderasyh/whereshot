@@ -1,57 +1,120 @@
+import 'package:purchases_flutter/purchases_flutter.dart' show Package;
 import 'package:whereshot/constants/app_constants.dart';
 
 class CreditPack {
   final String id;
   final String title;
-  final String productId;
   final int credits;
-  final double price;
+  final double? price; // Made price optional as it comes from RC
   final String? description;
+  final String productId; // Already exists, will be matched with RC
+  final String priceString; // Added for displaying RC price
+  final Package? revenueCatPackage; // Added to hold the original package
 
   const CreditPack({
     required this.id,
     required this.title,
-    required this.productId,
     required this.credits,
-    required this.price,
+    this.price, // Optional now
     this.description,
+    required this.productId,
+    required this.priceString,
+    this.revenueCatPackage,
   });
 
-  // Price per credit
-  double get pricePerCredit => price / credits;
+  // Factory constructor to create CreditPack from RevenueCat Package
+  factory CreditPack.fromRevenueCat(Package rcPackage) {
+    // Determine credits based on product ID - **Needs mapping**
+    int packCredits = _getCreditsForProductId(rcPackage.storeProduct.identifier);
+    String packTitle = _getTitleForProductId(rcPackage.storeProduct.identifier);
+    String packId = _getIdForProductId(rcPackage.storeProduct.identifier);
+    String? packDescription = _getDescriptionForProductId(rcPackage.storeProduct.identifier);
 
-  // Savings percentage compared to base rate
-  double get savingsPercentage {
-    final baseRate = AppConstants.costPerImage;
-    final actualRate = pricePerCredit;
-    return ((baseRate - actualRate) / baseRate) * 100;
+    return CreditPack(
+      id: packId, // Use mapped ID
+      title: packTitle, // Use mapped title
+      credits: packCredits, // Use mapped credits
+      price: rcPackage.storeProduct.price, // Get price from RC
+      description: packDescription, // Use mapped description
+      productId: rcPackage.storeProduct.identifier, // Get product ID from RC
+      priceString: rcPackage.storeProduct.priceString, // Get formatted price string
+      revenueCatPackage: rcPackage, // Store the original package
+    );
   }
 
-  // Default credit packs
-  static const List<CreditPack> defaultPacks = [
-    CreditPack(
-      id: 'small',
-      title: '5 Credits',
-      productId: AppConstants.fiveCreditsId,
-      credits: AppConstants.fiveCreditsValue,
-      price: AppConstants.fiveCreditsPrice,
-      description: 'Basic Pack',
-    ),
-    CreditPack(
-      id: 'medium',
-      title: '15 Credits',
-      productId: AppConstants.fifteenCreditsId,
-      credits: AppConstants.fifteenCreditsValue,
-      price: AppConstants.fifteenCreditsPrice,
-      description: 'Popular Choice',
-    ),
-    CreditPack(
-      id: 'large',
-      title: '50 Credits',
-      productId: AppConstants.fiftyCreditsId,
-      credits: AppConstants.fiftyCreditsValue,
-      price: AppConstants.fiftyCreditsPrice,
-      description: 'Best Value',
-    ),
-  ];
+  // Helper function to map RevenueCat product ID to app's credit count
+  // IMPORTANT: Update this mapping based on your actual Product IDs in RevenueCat
+  static int _getCreditsForProductId(String productId) {
+    switch (productId) {
+      case AppConstants.fiveCreditsId:
+        return AppConstants.fiveCreditsValue;
+      case AppConstants.fifteenCreditsId:
+        return AppConstants.fifteenCreditsValue;
+      case AppConstants.fiftyCreditsId:
+        return AppConstants.fiftyCreditsValue;
+      default:
+        return 0; // Or handle error appropriately
+    }
+  }
+
+  // Helper function to map RevenueCat product ID to app's title
+  static String _getTitleForProductId(String productId) {
+    switch (productId) {
+      case AppConstants.fiveCreditsId:
+        return '5 Credits';
+      case AppConstants.fifteenCreditsId:
+        return '15 Credits';
+      case AppConstants.fiftyCreditsId:
+        return '50 Credits';
+      default:
+        return 'Unknown Pack';
+    }
+  }
+
+  // Helper function to map RevenueCat product ID to app's internal ID
+  static String _getIdForProductId(String productId) {
+    switch (productId) {
+      case AppConstants.fiveCreditsId:
+        return 'small';
+      case AppConstants.fifteenCreditsId:
+        return 'medium';
+      case AppConstants.fiftyCreditsId:
+        return 'large';
+      default:
+        return productId; // Fallback to product ID itself
+    }
+  }
+
+    // Helper function to map RevenueCat product ID to app's description
+  static String? _getDescriptionForProductId(String productId) {
+    switch (productId) {
+      case AppConstants.fiveCreditsId:
+        return 'Basic Pack';
+      case AppConstants.fifteenCreditsId:
+        return 'Popular Choice';
+      case AppConstants.fiftyCreditsId:
+        return 'Best Value';
+      default:
+        return null;
+    }
+  }
+
+  // Price per credit (uses RC price if available)
+  double? get pricePerCredit {
+    if (price != null && credits > 0) {
+      return price! / credits;
+    }
+    return null;
+  }
+
+  // Savings percentage compared to base rate (uses RC price)
+  double? get savingsPercentage {
+    final baseRate = AppConstants.costPerImage;
+    final actualRate = pricePerCredit;
+    if (actualRate != null && baseRate > 0) {
+      return ((baseRate - actualRate) / baseRate) * 100;
+    }
+    return null;
+  }
+
 } 

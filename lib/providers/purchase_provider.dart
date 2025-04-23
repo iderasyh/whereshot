@@ -1,102 +1,79 @@
-import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:flutter/services.dart'; // Required for PlatformException
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:whereshot/models/credit_pack.dart';
-import 'package:whereshot/providers/service_providers.dart';
-import 'package:whereshot/providers/user_provider.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
+
+import '../constants/app_constants.dart';
 
 part 'purchase_provider.g.dart';
 
+// Provider to handle RevenueCat offerings and purchases
 @riverpod
-class PurchaseNotifier extends _$PurchaseNotifier {
+class Purchase extends _$Purchase {
   @override
-  Future<List<CreditPack>> build() async {
-    final purchaseService = ref.watch(purchaseServiceProvider);
-    
+  Future<Offerings> build() async {
+    // Initial fetch of offerings when the provider is first read.
+    return _fetchOfferings();
+  }
+
+  // Internal method to fetch offerings from RevenueCat
+  Future<Offerings> _fetchOfferings() async {
     try {
-      // Initialize the purchase service
-      await purchaseService.initialize();
-      
-      // Get available credit packs
-      return await purchaseService.getAvailableCreditPacks();
+      final offerings = await Purchases.getOfferings();
+      return offerings;
+    } on PlatformException catch (_) {
+      // Handle specific RevenueCat errors
+      throw Exception(AppConstants.failedLoadingPackages);
     } catch (e) {
-      // Return default packs if service fails
-      return CreditPack.defaultPacks;
+      throw Exception(AppConstants.failedLoadingPackages);
     }
   }
-  
-  // Purchase a credit pack
-  Future<bool> purchaseCreditPack(CreditPack pack) async {
-    state = const AsyncValue.loading();
-    
+
+  // Method to manually refresh offerings data
+  Future<void> refreshOfferings() async {
+    state = const AsyncValue.loading(); // Set state to loading
+    // Guard against errors during fetch and update state
+    state = await AsyncValue.guard(() => _fetchOfferings());
+  }
+
+  // Method to purchase a specific RevenueCat package
+  Future<CustomerInfo> purchasePackage(Package packageToPurchase) async {
     try {
-      final purchaseService = ref.read(purchaseServiceProvider);
-      final userNotifier = ref.read(userNotifierProvider.notifier);
-      
-      // Purchase the pack
-      final purchaseResult = await purchaseService.purchaseCreditPack(pack);
-      
-      if (purchaseResult != null) {
-        // Add credits to user account
-        await userNotifier.addCredits(pack.credits);
-        
-        // Refresh available packs
-        state = await AsyncValue.guard(() async {
-          return await purchaseService.getAvailableCreditPacks();
-        });
-        
-        return true;
+      // Perform the purchase
+      CustomerInfo customerInfo = await Purchases.purchasePackage(
+        packageToPurchase,
+      );
+      // The listener in main.dart might handle further logic, or you can add it here.
+      return customerInfo;
+    } on PlatformException catch (e) {
+      // Handle specific purchase errors
+      var message = AppConstants.purchaseError;
+      final errorCode = PurchasesErrorHelper.getErrorCode(e);
+      if (errorCode == PurchasesErrorCode.purchaseCancelledError) {
+        message = AppConstants.purchaseCancelled;
+      } else {
+        message = AppConstants.purchaseFailed;
       }
-      
-      // Purchase failed or was cancelled
-      state = AsyncValue.data(await purchaseService.getAvailableCreditPacks());
-      return false;
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-      return false;
-    }
-  }
-  
-  // Restore purchases
-  Future<bool> restorePurchases() async {
-    state = const AsyncValue.loading();
-    
-    try {
-      final purchaseService = ref.read(purchaseServiceProvider);
-      final userNotifier = ref.read(userNotifierProvider.notifier);
-      
-      // Restore purchases
-      final customerInfo = await purchaseService.restorePurchases();
-      
-      // Check for credited entitlements
-      bool purchasesRestored = false;
-      
-      // Process entitlements
-      // This depends on how you've set up your RevenueCat products
-      // This is a simplistic example
-      for (final pack in CreditPack.defaultPacks) {
-        if (customerInfo.entitlements.all[pack.productId]?.isActive ?? false) {
-          await userNotifier.addCredits(pack.credits);
-          purchasesRestored = true;
-        }
-      }
-      
-      // Refresh available packs
-      state = AsyncValue.data(await purchaseService.getAvailableCreditPacks());
-      
-      return purchasesRestored;
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-      return false;
-    }
-  }
-  
-  // Get price string for a pack
-  Future<String?> getPriceString(CreditPack pack) async {
-    try {
-      final purchaseService = ref.read(purchaseServiceProvider);
-      return await purchaseService.getPriceStringForPack(pack);
+      throw Exception(message);
     } catch (e) {
-      return null;
+      // Handle unexpected errors during purchase
+      throw Exception(AppConstants.purchaseError);
     }
   }
-} 
+
+  // Method to restore previous purchases
+  Future<CustomerInfo> restorePurchases() async {
+    try {
+      // Perform restore purchases
+      CustomerInfo restoredInfo = await Purchases.restorePurchases();
+      // Check restored customerInfo to see if entitlements are now active.
+      // The listener in main.dart might handle credit updates, or you can add logic here.
+      return restoredInfo;
+    } on PlatformException catch (_) {
+      // Handle errors during restore
+      throw Exception(AppConstants.restorePurchasesError);
+    } catch (e) {
+      // Handle unexpected errors during restore
+      throw Exception(AppConstants.restorePurchasesError);
+    }
+  }
+}

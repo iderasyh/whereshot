@@ -28,6 +28,7 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
       final openAIService = ref.read(openAIServiceProvider);
       final firebaseService = ref.read(firebaseServiceProvider);
       final storageService = ref.read(storageServiceProvider);
+      final authService = ref.read(authServiceProvider);
       final userNotifier = ref.read(userNotifierProvider.notifier);
 
       // Check if user has enough credits
@@ -42,8 +43,11 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
 
       // Generate a unique ID for this detection
       final id = const Uuid().v4();
-      final deviceId = await storageService.getDeviceId();
-
+      final uid = authService.currentUser?.uid;
+      if (uid == null) {
+        state = AsyncValue.error(AppConstants.noUserError, StackTrace.current);
+        return state.hasError;
+      }
       // Call OpenAI API to analyze image
       final locationInfo = await openAIService.analyzeImageLocation(
         imageFile: imageFile,
@@ -52,11 +56,7 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
       String? imageUrl;
       // Upload image if saving is enabled
       if (saveImage) {
-        imageUrl = await firebaseService.uploadImageFile(
-          imageFile,
-          deviceId,
-          id,
-        );
+        imageUrl = await firebaseService.uploadImageFile(imageFile, uid, id);
       }
 
       // Create detection result
@@ -71,7 +71,7 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
         longitude: locationInfo.longitude,
         imageUrl: imageUrl,
         originalPrompt: locationInfo.rawContent,
-        deviceId: deviceId,
+        uid: uid,
         timestamp: DateTime.now(),
         saved: saveImage,
       );
@@ -128,8 +128,12 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
 
       final firebaseService = ref.read(firebaseServiceProvider);
       final storageService = ref.read(storageServiceProvider);
-      final deviceId = await storageService.getDeviceId();
-
+      final authService = ref.read(authServiceProvider);
+      final uid = authService.currentUser?.uid;
+      if (uid == null) {
+        state = AsyncValue.error(AppConstants.noUserError, StackTrace.current);
+        throw Exception(AppConstants.noUserError);
+      }
       // Get image bytes from wherever they're stored temporarily
       // This part depends on how you're handling temporary images
 
@@ -141,7 +145,7 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
 
       final imageUrl = await firebaseService.uploadImageFile(
         imageFile,
-        deviceId,
+        uid,
         currentResult.id,
       );
 

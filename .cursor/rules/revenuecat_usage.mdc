@@ -1,0 +1,42 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# RevenueCat Usage for In-App Purchases
+
+This document outlines how RevenueCat is integrated into the app for managing in-app purchases (IAPs), specifically for credit packs.
+
+## Integration Overview
+- RevenueCat SDK is used to handle interactions with the App Store and Google Play Store for fetching products, making purchases, and restoring purchases.
+- Integration logic is primarily managed through providers, ensuring separation from the UI layer.
+
+## Key Components
+1.  **Initialization:**
+    - RevenueCat is typically initialized during app startup, often within `main.dart` or a dedicated initialization service, configuring it with the necessary API keys.
+
+2.  **Provider Interaction:**
+    - The `[user_provider.dart](mdc:lib/providers/user_provider.dart)` likely coordinates purchase flows, interacting with RevenueCat to fetch offerings and process transactions. It may delegate specific RevenueCat calls to a dedicated service or handle them directly.
+
+3.  **Fetching Offerings:**
+    - The `[store_screen.dart](mdc:lib/screens/store_screen.dart)` uses a provider (likely `user_provider` or a dedicated `purchase_provider`) to fetch available product offerings (credit packs) from RevenueCat.
+    - These offerings are often mapped to the app's internal `[credit_pack.dart](mdc:lib/models/credit_pack.dart)` model for display.
+
+4.  **Making Purchases:**
+    - When a user selects a credit pack on the `StoreScreen`, the UI triggers a purchase action in the relevant provider.
+    - The provider calls RevenueCat's purchase methods (e.g., `purchasePackage`).
+    - Success or failure is handled, updating the UI accordingly (e.g., showing success messages or error SnackBars).
+
+5.  **Restoring Purchases:**
+    - A mechanism, often triggered from the settings or store screen, allows users to restore previously purchased non-consumable items or subscriptions (though credits are typically consumable). The provider calls RevenueCat's restore methods.
+
+6.  **Updating User State:**
+    - Upon successful purchase confirmation from RevenueCat, the `user_provider.dart` updates the user's credit balance and persists this change.
+
+## Best Practices
+- Always interact with RevenueCat through the designated provider(s) to maintain architectural consistency.
+- Handle potential errors during fetching, purchasing, or restoring gracefully.
+- Ensure user state (like credit balance) is accurately updated and synchronized after transactions.
+- Use RevenueCat's listener mechanisms to react to subscription status changes or other relevant events if applicable.
+
+Adhere to this pattern when working with in-app purchases to ensure a consistent and reliable implementation.

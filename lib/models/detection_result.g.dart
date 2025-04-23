@@ -18,7 +18,7 @@ DetectionResult _$DetectionResultFromJson(Map<String, dynamic> json) =>
       longitude: (json['longitude'] as num?)?.toDouble(),
       imageUrl: json['imageUrl'] as String?,
       originalPrompt: json['originalPrompt'] as String?,
-      deviceId: json['deviceId'] as String,
+      uid: json['uid'] as String,
       timestamp: DateTime.parse(json['timestamp'] as String),
       saved: json['saved'] as bool,
     );
@@ -35,7 +35,7 @@ Map<String, dynamic> _$DetectionResultToJson(DetectionResult instance) =>
       'longitude': instance.longitude,
       'imageUrl': instance.imageUrl,
       'originalPrompt': instance.originalPrompt,
-      'deviceId': instance.deviceId,
+      'uid': instance.uid,
       'timestamp': instance.timestamp.toIso8601String(),
       'saved': instance.saved,
     };

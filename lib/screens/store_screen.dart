@@ -3,11 +3,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../constants/app_constants.dart';
 import '../models/credit_pack.dart';
 import '../providers/purchase_provider.dart';
+import '../providers/user_provider.dart';
 import '../router/app_router.dart';
 import '../theme/app_theme.dart';
 import '../widgets/async_value_widget.dart';
@@ -23,7 +25,8 @@ class StoreScreen extends ConsumerStatefulWidget {
 
 class _StoreScreenState extends ConsumerState<StoreScreen>
     with TickerProviderStateMixin {
-  bool _isProcessing = false;
+  bool _isPurchasing = false;
+  bool _isRestoring = false;
   late AnimationController _staggeredController;
 
   @override
@@ -41,20 +44,20 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     super.dispose();
   }
 
-  Future<void> _purchaseCreditPack(CreditPack pack) async {
-    if (_isProcessing) return;
-    setState(() => _isProcessing = true);
+  Future<void> _purchaseRevenueCatPackage(Package rcPackage) async {
+    if (_isPurchasing) return;
+    setState(() => _isPurchasing = true);
 
     try {
-      final success = await ref
-          .read(purchaseNotifierProvider.notifier)
-          .purchaseCreditPack(pack);
+      await ref
+          .read(purchaseProvider.notifier)
+          .purchasePackage(rcPackage);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? AppConstants.purchaseSuccess : AppConstants.purchaseError),
-            backgroundColor: success ? AppColors.successGreen : AppColors.errorRed,
+            content: const Text(AppConstants.purchaseSuccess),
+            backgroundColor: AppColors.successGreen,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -63,7 +66,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Purchase Error: ${e.toString()}'),
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
             backgroundColor: AppColors.errorRed,
             behavior: SnackBarBehavior.floating,
           ),
@@ -71,27 +74,25 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
       }
     } finally {
       if (mounted) {
-        setState(() => _isProcessing = false);
+        setState(() => _isPurchasing = false);
       }
     }
   }
 
   Future<void> _restorePurchases() async {
-    if (_isProcessing) return;
-    setState(() => _isProcessing = true);
+    if (_isRestoring) return;
+    setState(() => _isRestoring = true);
 
     try {
-      final restored = await ref
-          .read(purchaseNotifierProvider.notifier)
-          .restorePurchases();
+      await ref.read(userNotifierProvider.notifier).restorePurchases();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              restored ? 'Purchases restored successfully!' : 'No purchases found to restore.',
+            content: const Text(
+              'Restore attempt finished. Check your credits.',
             ),
-            backgroundColor: restored ? AppColors.successGreen : AppColors.textGrey,
+            backgroundColor: AppColors.successGreen,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -100,7 +101,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Restore Error: ${e.toString()}'),
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
             backgroundColor: AppColors.errorRed,
             behavior: SnackBarBehavior.floating,
           ),
@@ -108,14 +109,14 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
       }
     } finally {
       if (mounted) {
-        setState(() => _isProcessing = false);
+        setState(() => _isRestoring = false);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final purchaseAsync = ref.watch(purchaseNotifierProvider);
+    final offeringsAsync = ref.watch(purchaseProvider);
 
     return Scaffold(
       backgroundColor: AppColors.lightGrey,
@@ -135,9 +136,11 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         ),
         actions: [
           TextButton.icon(
-            icon: const Icon(Icons.restore, size: 20),
+            icon: _isRestoring
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.restore, size: 20),
             label: const Text('Restore'),
-            onPressed: _isProcessing ? null : _restorePurchases,
+            onPressed: _isRestoring || _isPurchasing ? null : _restorePurchases,
             style: TextButton.styleFrom(
               foregroundColor: AppColors.accent,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
@@ -147,20 +150,27 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
       ),
       body: SafeArea(
         bottom: false,
-        child: AsyncValueWidget(
-          value: purchaseAsync,
+        child: AsyncValueWidget<Offerings>(
+          value: offeringsAsync,
           loading: _buildLoadingState(),
           error: (error, stackTrace) => _buildErrorState(context, error),
-          data: (packs) => _buildStoreContent(context, packs),
+          data: (offerings) => _buildStoreContent(context, offerings),
         ),
       ),
     );
   }
 
-  Widget _buildStoreContent(BuildContext context, List<CreditPack> packs) {
-    if (packs.isEmpty) {
+  Widget _buildStoreContent(BuildContext context, Offerings offerings) {
+    final currentOffering = offerings.current;
+    if (currentOffering == null || currentOffering.availablePackages.isEmpty) {
       return _buildEmptyState(context);
     }
+
+    final packs = currentOffering.availablePackages
+        .map((rcPackage) => CreditPack.fromRevenueCat(rcPackage))
+        .toList();
+
+    packs.sort((a, b) => a.credits.compareTo(b.credits));
 
     return ListView.builder(
       padding: const EdgeInsets.only(
@@ -172,6 +182,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
       itemCount: packs.length,
       itemBuilder: (context, index) {
         final pack = packs[index];
+        final rcPackage = pack.revenueCatPackage;
         
         final intervalStart = (index * 0.15).clamp(0.0, 0.8);
         final intervalEnd = (intervalStart + 0.4).clamp(0.0, 1.0);
@@ -200,7 +211,9 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
               padding: const EdgeInsets.only(bottom: AppSpacing.l),
               child: CreditPackCard(
                 pack: pack,
-                onPurchase: _isProcessing ? null : () => _purchaseCreditPack(pack),
+                onPurchase: _isPurchasing || _isRestoring || rcPackage == null
+                    ? null
+                    : () => _purchaseRevenueCatPackage(rcPackage),
               ),
             ),
           ),
@@ -248,20 +261,29 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
             ),
             const SizedBox(height: AppSpacing.l),
             Text(
-              'Store Not Available',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              'No credit packs available',
+              style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.s),
             Text(
-              'Credit packs couldn\'t be loaded at this time. Please check back later.',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textGrey,
-                  ),
+              'Please check back later or try refreshing.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textGrey,
+              ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: AppSpacing.xl),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh Store'),
+              onPressed: () =>
+                  ref.read(purchaseProvider.notifier).refreshOfferings(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: AppColors.white,
+              ),
+            )
           ],
         ),
       ),
@@ -275,41 +297,34 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.error_outline_rounded,
-              color: AppColors.errorRed.withValues(alpha: 0.7),
+            const Icon(
+              Icons.error_outline,
+              color: AppColors.errorRed,
               size: 64,
             ),
             const SizedBox(height: AppSpacing.l),
             Text(
-              'Error Loading Store',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              'Failed to load store items',
+              style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.s),
             Text(
-              'Something went wrong while loading credit packs. Please try again.\nError: ${error.toString()}',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textGrey,
-                  ),
+              error.toString().replaceFirst('Exception: ', ''),
+              style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.xl),
             ElevatedButton.icon(
-              onPressed: () => ref.refresh(purchaseNotifierProvider),
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry Loading'),
+              label: const Text('Try Again'),
+              onPressed: () =>
+                  ref.read(purchaseProvider.notifier).refreshOfferings(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accentAlt,
+                backgroundColor: AppColors.accent,
                 foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl,
-                  vertical: AppSpacing.m,
-                ),
               ),
-            ),
+            )
           ],
         ),
       ),

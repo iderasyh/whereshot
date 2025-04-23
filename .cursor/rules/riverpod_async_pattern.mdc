@@ -1,0 +1,69 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Riverpod AsyncValue Handling Pattern
+
+When implementing asynchronous operations within Riverpod Notifier classes that manage `AsyncValue` state (e.g., `AsyncNotifier`, `FutureNotifier`), adhere to the following pattern for consistent loading and error handling:
+
+## Standard Async Method Pattern
+
+1.  **Set Loading State:** Immediately set the state to loading before starting the async operation. This provides immediate feedback to the UI.
+    ```dart
+    state = const AsyncValue.loading();
+    ```
+
+2.  **Execute with `AsyncValue.guard`:** Wrap the asynchronous function call within `AsyncValue.guard`. This utility automatically catches errors and transitions the state to `AsyncError` if the future fails, or `AsyncData` with the result if it succeeds.
+    ```dart
+    state = await AsyncValue.guard(() => _yourAsyncFunction(arguments));
+    ```
+
+3.  **Return Success/Failure (Optional):** If the calling UI needs to know if the operation succeeded (e.g., to show a specific success/error message or navigate), you can return the inverse of `state.hasError` after the guard executes.
+    ```dart
+    return !state.hasError;
+    ```
+
+## Example Implementation
+
+```dart
+@riverpod
+class MyDataNotifier extends _$MyDataNotifier {
+  @override
+  Future<MyData> build() async {
+    // Initial data fetching...
+    return _fetchInitialData();
+  }
+
+  Future<MyData> _fetchInitialData() async {
+    // ... implementation ...
+    return MyData(/* ... */);
+  }
+
+  Future<bool> updateData(String newData) async {
+    // 1. Set loading state
+    state = const AsyncValue.loading();
+
+    // 2. Execute guarded async operation
+    state = await AsyncValue.guard(() => _performUpdate(newData));
+
+    // 3. Return success status
+    return !state.hasError;
+  }
+
+  Future<MyData> _performUpdate(String data) async {
+    // ... implementation of the async update logic ...
+    // This might throw an error if it fails.
+    await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
+    if (data == "fail") {
+      throw Exception("Failed to update data!");
+    }
+    return MyData(value: data);
+  }
+}
+```
+
+Following this pattern ensures that:
+- Loading states are consistently displayed.
+- Errors are automatically caught and reflected in the state.
+- The main logic remains clean, focusing on the asynchronous operation itself.

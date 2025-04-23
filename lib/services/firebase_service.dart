@@ -20,11 +20,11 @@ class FirebaseService {
   // User Operations
   
   // Get user document
-  Future<app_user.User?> getUser(String deviceId) async {
+  Future<app_user.User?> getUser(String uid) async {
     try {
       final docSnapshot = await _firestore
           .collection(AppConstants.usersCollection)
-          .doc(deviceId)
+          .doc(uid)
           .get();
       
       if (docSnapshot.exists) {
@@ -42,7 +42,7 @@ class FirebaseService {
     try {
       await _firestore
           .collection(AppConstants.usersCollection)
-          .doc(user.deviceId)
+          .doc(user.uid)
           .set(user.toFirestore());
       
       return true;
@@ -52,9 +52,9 @@ class FirebaseService {
   }
   
   // Create user if not exists
-  Future<app_user.User> createUserIfNotExists(String deviceId) async {
+  Future<app_user.User> createUserIfNotExists(String uid) async {
     try {
-      final user = await getUser(deviceId);
+      final user = await getUser(uid);
       
       if (user != null) {
         return user;
@@ -62,7 +62,7 @@ class FirebaseService {
       
       // Create new user
       final newUser = app_user.User(
-        deviceId: deviceId,
+        uid: uid,
         credits: AppConstants.defaultCredits,
         defaultSaveMode: AppConstants.defaultStorageMode,
         lastUpdated: DateTime.now(),
@@ -74,7 +74,7 @@ class FirebaseService {
     } catch (e) {
       // Return default user if Firebase fails
       return app_user.User(
-        deviceId: deviceId,
+        uid: uid,
         credits: AppConstants.defaultCredits,
         defaultSaveMode: AppConstants.defaultStorageMode,
         lastUpdated: DateTime.now(),
@@ -83,11 +83,11 @@ class FirebaseService {
   }
   
   // Update user credits
-  Future<bool> updateUserCredits(String deviceId, int credits) async {
+  Future<bool> updateUserCredits(String uid, int credits) async {
     try {
       await _firestore
           .collection(AppConstants.usersCollection)
-          .doc(deviceId)
+          .doc(uid)
           .update({
         'credits': credits,
         'lastUpdated': FieldValue.serverTimestamp(),
@@ -116,11 +116,11 @@ class FirebaseService {
   }
   
   // Get user's detection results
-  Future<List<DetectionResult>> getUserDetectionResults(String deviceId) async {
+  Future<List<DetectionResult>> getUserDetectionResults(String uid) async {
     try {
       final snapshot = await _firestore
           .collection(AppConstants.detectionResultsCollection)
-          .where('deviceId', isEqualTo: deviceId)
+          .where('uid', isEqualTo: uid)
           .where('saved', isEqualTo: true)
           .orderBy('timestamp', descending: true)
           .get();
@@ -152,12 +152,12 @@ class FirebaseService {
   // Storage Operations
   
   // Upload image file
-  Future<String?> uploadImageFile(File file, String deviceId, String imageName) async {
+  Future<String?> uploadImageFile(File file, String uid, String imageName) async {
     try {
       final storageRef = _storage
           .ref()
           .child(AppConstants.photoStorage)
-          .child(deviceId)
+          .child(uid)
           .child('$imageName.jpg');
       
       final uploadTask = await storageRef.putFile(
