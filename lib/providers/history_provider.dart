@@ -101,11 +101,9 @@ class HistoryNotifier extends _$HistoryNotifier {
 
       // Get all saved results
       final results = await firebaseService.getUserDetectionResults(uid);
-
       // Delete each result from Firestore and Storage
       for (final result in results) {
         await firebaseService.deleteDetectionResult(result.id);
-
         if (result.imageUrl != null) {
           await firebaseService.deleteImage(result.uid, result.id);
         }
@@ -141,7 +139,6 @@ class HistoryNotifier extends _$HistoryNotifier {
     } catch (e) {
       // Do not update state on error to preserve existing history
       // Just log the error
-      print('Error adding result to history: $e');
     }
   }
 }

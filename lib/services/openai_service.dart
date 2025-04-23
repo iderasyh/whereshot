@@ -17,16 +17,16 @@ class OpenAIService {
       "locationName": {
         "type": "string",
         "description":
-            "A descriptive name of the location (e.g., Eiffel Tower). Should be 'Unknown location' if not identifiable.",
+            "A descriptive name of the location (e.g., Eiffel Tower, or unknown if not identifiable).",
       },
       "locationCity": {
         "type": "string",
-        "description": "The city of the location (e.g., Paris, or unknown).",
+        "description": "The city of the location (e.g., Paris, or unknown if not identifiable).",
       },
       "locationCountry": {
         "type": "string",
         "description":
-            "The country of the location (e.g., France, or unknown).",
+            "The country of the location (e.g., France, or unknown if not identifiable).",
       },
       "latitude": {
         "type": "number",
@@ -39,7 +39,7 @@ class OpenAIService {
       "confidence": {
         "type": "number",
         "description":
-            "A confidence score from 0 (not confident) to 1 (very confident) about the location match.",
+            "A confidence score from 0 (not confident) to 1 (very confident) about how sure you are that the location is correct.",
       },
       "clues": {
         "type": "string",
@@ -90,15 +90,11 @@ class OpenAIService {
 
       final response = await _sendRequest(request);
 
-      print('Response: ${response.toJson()}');
-
       // Use the helper method to extract structured info
       return extractLocationInfo(response);
     } on DioException catch (e) {
       throw _handleDioError(e);
-    } catch (e, st) {
-      print('Stack trace: $st');
-      print('Error analyzing image file: $e');
+    } catch (e) {
       throw Exception('Error analyzing image: ${e.toString()}');
     }
   }

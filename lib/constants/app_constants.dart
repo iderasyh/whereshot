@@ -67,6 +67,9 @@ class AppConstants {
       'Failed to restore purchases. Please try again.';
   static const String noUserError = 'No user found. Please sign in again.';
   static const String anErrorOccurred = 'An error occurred. Please try again.';
+  static const String locationNotFoundRefund =
+      'Unfortunately, we couldn\'t find the location for this photo. Your credit has been refunded.';
+  static const String creditRefundSuffix = ' (Your credit has been refunded).';
 
   // Success messages
   static const String purchaseSuccess = 'Purchase completed successfully!';

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,13 +8,9 @@ import 'package:whereshot/screens/home_screen.dart';
 import 'package:whereshot/screens/result_screen.dart';
 import 'package:whereshot/screens/store_screen.dart';
 
-enum AppRoute {
-  boarding,
-  home,
-  result,
-  store,
-  history,
-}
+import 'go_router_refresh_stream.dart';
+
+enum AppRoute { boarding, home, result, store, history }
 
 extension AppRouteExtension on AppRoute {
   String get path {
@@ -33,7 +27,7 @@ extension AppRouteExtension on AppRoute {
         return '/history';
     }
   }
-  
+
   String get name {
     return toString().split('.').last;
   }
@@ -61,9 +55,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoute.result.path,
         name: AppRoute.result.name,
-        builder: (context, state) => ResultScreen(
-          detectionId: state.extra as String?,
-        ),
+        builder:
+            (context, state) =>
+                ResultScreen(detectionId: state.extra as String?),
       ),
       GoRoute(
         path: AppRoute.store.path,
@@ -80,46 +74,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = authService.currentUser != null;
       final isLoggingIn = state.matchedLocation == AppRoute.boarding.path;
 
-      print('Redirect check: isLoggedIn=$isLoggedIn, location=${state.matchedLocation}');
-
       if (!isLoggedIn && !isLoggingIn) {
-        print('Redirecting to boarding...');
         return AppRoute.boarding.path;
       }
 
       if (isLoggedIn && isLoggingIn) {
-        print('Redirecting to home...');
         return AppRoute.home.path;
       }
 
-      print('No redirect needed.');
       return null;
     },
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Text(
-          'Page not found: ${state.uri}',
-          style: Theme.of(context).textTheme.titleLarge,
+    errorBuilder:
+        (context, state) => Scaffold(
+          body: Center(
+            child: Text(
+              'Page not found: ${state.uri}',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
         ),
-      ),
-    ),
   );
 });
-
-class GoRouterRefreshStream extends ChangeNotifier {
-  late final StreamSubscription<dynamic> _subscription;
-
-  GoRouterRefreshStream(Stream<dynamic> stream) {
-    notifyListeners();
-    _subscription = stream.asBroadcastStream().listen(
-          (dynamic _) => notifyListeners(),
-          onError: (Object error) => print('GoRouterRefreshStream Error: $error'),
-        );
-  }
-
-  @override
-  void dispose() {
-    _subscription.cancel();
-    super.dispose();
-  }
-} 
