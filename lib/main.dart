@@ -51,7 +51,7 @@ Future<void> _initializeRevenueCat() async {
 
   PurchasesConfiguration configuration;
   // IMPORTANT: Replace with your actual API keys
-  String googleApiKey = 'YOUR_GOOGLE_API_KEY'; // Uncomment and replace
+  String googleApiKey = Env.revenueCatAndroidKey;
   String appleApiKey = Env.revenueCatIosKey;
 
   if (Platform.isAndroid) {

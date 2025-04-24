@@ -45,7 +45,6 @@ class AppTheme {
         primary: AppColors.accent,
         secondary: AppColors.accentAlt,
         surface: AppColors.white,
-        background: AppColors.lightGrey,
         error: AppColors.errorRed,
       ),
       appBarTheme: const AppBarTheme(

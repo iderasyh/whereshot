@@ -18,4 +18,7 @@ final class Env {
 
   @EnviedField(varName: 'REVENUECAT_IOS_KEY', obfuscate: true)
   static final String revenueCatIosKey = _Env.revenueCatIosKey;
+
+  @EnviedField(varName: 'REVENUECAT_ANDROID_KEY', obfuscate: true)
+  static final String revenueCatAndroidKey = _Env.revenueCatAndroidKey;
 }

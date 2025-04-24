@@ -7,7 +7,7 @@ part of 'ui_providers.dart';
 // **************************************************************************
 
 String _$showWelcomeMessageHash() =>
-    r'5aa2264c536bb377a7fc79fe56feeac20f09a554';
+    r'e50490a7b0df5a38f6fdfc705e5baf6d27ccca05';
 
 /// Provider to control whether the initial welcome message should be shown.
 /// This is set to true after the first anonymous sign-in and reset after display.

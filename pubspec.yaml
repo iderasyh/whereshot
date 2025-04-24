@@ -3,7 +3,7 @@ description: "AI-powered photo location detection app."
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.7.2
@@ -110,8 +110,11 @@ flutter_launcher_icons:
 # Add flutter_native_splash configuration
 flutter_native_splash:
   color: "#FFFFFF" # Changed to white
-  image: assets/images/logo-transparent.png
+  image: assets/images/splash-icon.png
   android_12:
     color: "#FFFFFF" # Changed to white
-    image: assets/images/logo-transparent.png
+    image: assets/images/splash-icon.png
+  
+  android_gravity: center
+  ios_content_mode: scaleAspectFit
   web: false # Assuming no web support needed
