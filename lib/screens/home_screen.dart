@@ -562,7 +562,23 @@ class _HomeBottomControls extends StatelessWidget {
         TextButton(
           onPressed: () => context.goNamed(AppRoute.store.name),
           style: TextButton.styleFrom(foregroundColor: AppColors.textGrey),
-          child: const Text('Need More Location Finds? Get Credits'),
+          child: RichText(
+            text: TextSpan(
+              style: DefaultTextStyle.of(context).style.copyWith(
+                    color: AppColors.textGrey, // Default color for the span
+                  ),
+              children: const <TextSpan>[
+                TextSpan(text: 'Need More Location Finds? '),
+                TextSpan(
+                  text: 'Get Credits',
+                  style: TextStyle(
+                    color: AppColors.accent, // Accent color for this part
+                    fontWeight: FontWeight.w500, // Keep consistent weight if needed
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );

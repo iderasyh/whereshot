@@ -112,7 +112,6 @@ class OpenAIService {
     } on DioException catch (e) {
       throw _handleDioError(e);
     } catch (e) {
-      print('Error analyzing image bytes: $e');
       throw Exception('Error analyzing image bytes: ${e.toString()}');
     }
   }
@@ -124,7 +123,7 @@ class OpenAIService {
   ) {
     final userPrompt =
         customPrompt ??
-        "Analyze this image and identify the geographical location.";
+        "Analyze the provided image with maximum effort, using all your world knowledge, visual recognition, and reasoning skills. Identify the most likely real-world geographical location (city, landmark, country, or coordinates) depicted in the photo. Consider architectural styles, natural features, signage, language, climate, vegetation, and any other visual clues. If possible, provide the most precise location. Respond strictly according to the requested JSON schema.";
 
     return OpenAIRequest(
       model: AppConstants.openAIModelId,
@@ -132,7 +131,7 @@ class OpenAIService {
         OpenAIMessage(
           role: "system",
           content:
-              "You are an AI assistant specialized in identifying locations from photos. Respond strictly according to the requested JSON schema.",
+              "You are a world-class AI geolocation expert. Use all your advanced knowledge, reasoning, and visual analysis skills to identify the real-world location depicted in the user's photo. Leverage your understanding of geography, architecture, natural features, languages, signage, climate, and any other visual or contextual clues. Always provide the most precise and confident answer possible, and strictly respond using the requested JSON schema only.",
         ),
         OpenAIMessage(
           role: "user",
@@ -167,7 +166,6 @@ class OpenAIService {
       options: Options(headers: _headers),
     );
 
-    print('Response data: ${response.data}');
     return OpenAIResponse.fromJson(response.data);
   }
 
@@ -200,13 +198,9 @@ class OpenAIService {
 
       // Use the updated LocationInfo factory for parsing
       return LocationInfo.fromJson(jsonResponse, rawJsonString);
-    } on FormatException catch (e) {
-      print('Failed to parse JSON from OpenAI response: $e');
-      print('Raw content assumed to be JSON: $rawJsonString');
+    } on FormatException catch (_) {
       return LocationInfo.error('Failed to parse location data', rawJsonString);
     } catch (e) {
-      print('Error extracting location info: $e');
-      print('Raw content (if extracted): $rawJsonString');
       return LocationInfo.error(
         'Error processing OpenAI response: ${e.toString()}',
         rawJsonString,
@@ -228,8 +222,6 @@ class OpenAIService {
     } else {
       errorMessage += ': ${e.message}';
     }
-
-    print(errorMessage); // Log the detailed error
 
     if (e.response?.statusCode == 401) {
       return Exception('Invalid OpenAI API key.');
@@ -278,7 +270,6 @@ class OpenAIService {
         img.encodeJpg(resized, quality: AppConstants.imageQuality.toInt()),
       );
     } catch (e) {
-      print('Error resizing image, using original: $e');
       return await imageFile.readAsBytes();
     }
   }

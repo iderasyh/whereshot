@@ -59,8 +59,7 @@ class LocationDetectionNotifier extends _$LocationDetectionNotifier {
         );
 
         // --- Step 3: Check for 'Unknown Location' ---
-        if (locationInfo.locationName.toLowerCase() == 'unknown' ||
-            locationInfo.locationName.toLowerCase() == 'unknown location') {
+        if (locationInfo.locationName.toLowerCase().startsWith('unknown')) {
           // Refund credit
           await userNotifier.addCredits(1);
           creditUsed = false; // Mark credit as refunded
